@@ -1,0 +1,9 @@
+# Zero-cost end-to-end smoke test using the scripted stub provider.
+run_name: stage0_smoke
+seed: 20261107
+models:
+  - {name: stub-violate, provider: stub, stub_mode: violate, stub_attest: "Yes"}
+  - {name: stub-comply, provider: stub, stub_mode: comply, stub_attest: "No.", stub_nudge: true}
+cells:
+  - {conditions: [control], V: [0.0, 1.0], reps: 2}
+  - {conditions: [block, enable], V: [1.0], reps: 1}

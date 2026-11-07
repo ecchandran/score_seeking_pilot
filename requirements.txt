@@ -1,0 +1,9 @@
+# Lower bounds only; pin exact versions with `pip freeze` once installed (see NOTES.md).
+openai>=1.60
+python-dotenv>=1.0
+pyyaml>=6.0
+pandas>=2.0
+numpy>=1.26
+statsmodels>=0.14
+scikit-learn>=1.4
+pytest>=8.0
