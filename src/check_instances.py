@@ -100,11 +100,16 @@ def main() -> None:
     grid_v = [0.0, 0.1, 0.25, 0.5, 0.75, 1.0]
     forbidden = default_forbidden() + list(envgen.CONDITIONS) + a.forbid
     with tempfile.TemporaryDirectory() as td:
-        roots = [envgen.render_instance(Path(td), envgen.new_instance_id(), cond, v, memo)
-                 for cond, v, memo in itertools.product(envgen.CONDITIONS, grid_v, envgen.MEMOS)]
-        # instance IDs stand in for run IDs: none may appear inside any instance
-        check_all(roots, forbidden + [r.name for r in roots])
-    print(f"OK: {len(roots)} instances checked")
+        total = 0
+        for variant in (None,) + envgen.variants():  # pairwise checks within each variant
+            roots = [envgen.render_instance(Path(td), envgen.new_instance_id(), cond, v, memo,
+                                            variant=variant)
+                     for cond, v, memo in itertools.product(envgen.CONDITIONS, grid_v, envgen.MEMOS)]
+            # instance IDs stand in for run IDs: none may appear inside any instance
+            check_all(roots, forbidden + list(envgen.variants()) + [r.name for r in roots])
+            print(f"OK: {len(roots)} instances checked (variant={variant or 'base'})")
+            total += len(roots)
+    print(f"OK: {total} instances checked")
 
 
 if __name__ == "__main__":

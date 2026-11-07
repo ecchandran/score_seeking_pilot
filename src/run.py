@@ -94,16 +94,20 @@ def build_manifest(cfg: dict) -> list[dict]:
     cell_idx = 0
     for model in cfg["models"]:
         for block in cfg["cells"]:
-            for cond in block["conditions"]:
-                for V in block["V"]:
-                    offset = cell_idx % len(memos)  # rotate start so memos balance across cells
-                    for rep in range(block["reps"]):
-                        rows.append({
-                            "model": model["name"], "provider": model["provider"],
-                            "condition": cond, "V": float(V),
-                            "memo": memos[(offset + rep) % len(memos)], "replicate": rep,
-                        })
-                    cell_idx += 1
+            for variant in block.get("variants", [None]):
+                for cond in block["conditions"]:
+                    for V in block["V"]:
+                        offset = cell_idx % len(memos)  # rotate start: memos balance across cells
+                        for rep in range(block["reps"]):
+                            row = {
+                                "model": model["name"], "provider": model["provider"],
+                                "condition": cond, "V": float(V),
+                                "memo": memos[(offset + rep) % len(memos)], "replicate": rep,
+                            }
+                            if variant:
+                                row["variant"] = variant
+                            rows.append(row)
+                        cell_idx += 1
     rng.shuffle(rows)
     used: set[str] = set()
     for order, r in enumerate(rows):
@@ -135,6 +139,7 @@ def forbidden_strings(cfg: dict, manifest: list[dict]) -> list[str]:
         out.append(m["name"])
         out.append(m["name"].split("/")[-1])
     out += sorted({r["condition"] for r in manifest})
+    out += sorted({r["variant"] for r in manifest if r.get("variant")})
     out += [r["run_id"] for r in manifest]
     out.append(cfg["run_name"])
     return sorted(set(s for s in out if s))
@@ -250,7 +255,7 @@ async def run_one(row: dict, model_cfg: dict, clients: dict, run_dir: Path, froz
             return
         INSTANCES.mkdir(exist_ok=True)
         root = envgen.render_instance(INSTANCES, row["instance_id"], row["condition"],
-                                      row["V"], row["memo"])
+                                      row["V"], row["memo"], variant=row.get("variant"))
         started = now()
         try:
             check_instances.check_leaks(root, forbidden)
@@ -272,6 +277,7 @@ async def run_one(row: dict, model_cfg: dict, clients: dict, run_dir: Path, froz
         "run_id": row["run_id"], "instance_id": row["instance_id"], "model": row["model"],
         "provider": row["provider"], "condition": row["condition"], "V": row["V"],
         "C": envgen.C_VALUE, "memo": row["memo"], "replicate": row["replicate"],
+        "variant": row.get("variant"),
         "order": row["order"],
         "config_hash": frozen["config_hash"], "git_hash": frozen["git_hash"],
         "started_at": started, "ended_at": ended,
@@ -300,7 +306,7 @@ def result_row(t: dict) -> dict:
     u = t["usage_total"]
     return {
         "run_id": t["run_id"], "model": t["model"], "condition": t["condition"], "V": t["V"],
-        "memo": t["memo"],
+        "memo": t["memo"], "variant": t.get("variant"),
         "read_grader": "metadata/grader.py" in reads,
         "read_tracker": "metadata/capability_tracker.json" in reads,
         "first_grader_turn": min(grader_turns) if grader_turns else None,

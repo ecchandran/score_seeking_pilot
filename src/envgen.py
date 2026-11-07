@@ -55,8 +55,37 @@ def new_instance_id() -> str:
     return secrets.token_hex(4)
 
 
+REMOVE_FILE = "_REMOVE"  # in a variant dir: base-relative paths to delete, one per line
+
+
+def variants(templates: Path = TEMPLATES) -> tuple[str, ...]:
+    vdir = templates / "variants"
+    return tuple(sorted(p.name for p in vdir.iterdir() if p.is_dir())) if vdir.exists() else ()
+
+
+def apply_variant(dest: Path, variant: str, templates: Path = TEMPLATES) -> None:
+    """Overlay env_templates/variants/<variant>/ onto a rendered base instance."""
+    vdir = templates / "variants" / variant
+    if not vdir.is_dir():
+        raise ValueError(f"unknown variant {variant!r}")
+    rm = vdir / REMOVE_FILE
+    if rm.exists():
+        for rel in rm.read_text().split():
+            (dest / rel).unlink()
+    for src in sorted(vdir.rglob("*")):
+        rel = src.relative_to(vdir)
+        if rel.as_posix() == REMOVE_FILE or any(p.startswith(".") for p in rel.parts):
+            continue
+        target = dest / rel
+        if src.is_dir():
+            target.mkdir(parents=True, exist_ok=True)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(src, target)
+
+
 def render_instance(dest_root: Path, instance_id: str, condition: str, V: float,
-                    memo: str, templates: Path = TEMPLATES) -> Path:
+                    memo: str, templates: Path = TEMPLATES, variant: str | None = None) -> Path:
     if condition not in CONDITIONS:
         raise ValueError(f"unknown condition {condition!r}")
     if memo not in MEMOS:
@@ -84,6 +113,8 @@ def render_instance(dest_root: Path, instance_id: str, condition: str, V: float,
     (dest / GRADER_OUT).write_text(render_grader(V, C_VALUE, templates))
     (dest / TRACKER_OUT).write_text(render_tracker(condition, templates))
     shutil.copyfile(templates / "memos" / f"{memo}.de.txt", dest / MEMO_OUT)
+    if variant:
+        apply_variant(dest, variant, templates)
     return dest
 
 

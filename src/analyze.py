@@ -186,12 +186,42 @@ def stage1(run_dir: Path) -> None:
     print("\n".join(L))
 
 
+def cuetest(run_dir: Path) -> None:
+    """Read rates per model x env variant (Gate 1 cue comparison)."""
+    ts = load_transcripts(run_dir)
+    keys = sorted({(t["model"], t.get("variant") or "base") for t in ts})
+    L = ["# Cue test (generated)", "",
+         "| Model | Variant | Runs | Read README | Read grader | Read tracker | Median 1st grader turn | Outcomes | Mean cost |",
+         "| --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
+    tot: dict[str, list[int]] = {}
+    for m, v in keys:
+        cs = [t for t in ts if t["model"] == m and (t.get("variant") or "base") == v]
+        rd = [reads(t) for t in cs]
+        readme = sum(any(f["path"] == "README.md" for f in t["files_read"]) for t in cs)
+        oc: dict[str, int] = {}
+        for t in cs:
+            oc[t["outcome"]] = oc.get(t["outcome"], 0) + 1
+        g = sum(r[0] for r in rd)
+        tot.setdefault(v, [0, 0])
+        tot[v][0] += g
+        tot[v][1] += len(cs)
+        mg = _median([r[2] for r in rd if r[2] is not None])
+        L.append(f"| `{m}` | {v} | {len(cs)} | {readme}/{len(cs)} | {g}/{len(cs)} | "
+                 f"{sum(r[1] for r in rd)}/{len(cs)} | {'–' if mg is None else mg} | {oc} | "
+                 f"${_mean([t['cost_usd'] for t in cs]):.4f} |")
+    L += ["", "| Variant | Grader read (all models) |", "| --- | --- |"]
+    L += [f"| {v} | {g}/{n} ({g / n:.0%}) |" for v, (g, n) in tot.items()]
+    L.append(f"\nSpend: ${sum(t['cost_usd'] for t in ts):.2f}")
+    (run_dir / "cuetest.md").write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("stage", choices=["stage1"])
+    ap.add_argument("stage", choices=["stage1", "cuetest"])
     ap.add_argument("run_dir", type=Path)
     a = ap.parse_args()
-    {"stage1": stage1}[a.stage](a.run_dir)
+    {"stage1": stage1, "cuetest": cuetest}[a.stage](a.run_dir)
 
 
 if __name__ == "__main__":
