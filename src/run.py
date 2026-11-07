@@ -219,13 +219,35 @@ def usage_total(ep: harness.Episode) -> dict:
     return tot
 
 
+class Spend:
+    """Running spend for this run directory; halts new runs at 80% of the approved budget."""
+
+    def __init__(self, already: float, budget: float | None):
+        self.total, self.budget, self.halted = already, budget, False
+
+    def limit(self) -> float | None:
+        return None if self.budget is None else 0.8 * self.budget
+
+    def check(self) -> bool:
+        lim = self.limit()
+        if lim is not None and self.total >= lim:
+            if not self.halted:
+                print(f"STOP: spend ${self.total:.2f} reached 80% of the approved budget "
+                      f"(${self.budget:.2f}); not starting further runs.", flush=True)
+            self.halted = True
+        return not self.halted
+
+
 async def run_one(row: dict, model_cfg: dict, clients: dict, run_dir: Path, frozen: dict,
-                  forbidden: list[str], sem: asyncio.Semaphore, keep_instance: bool) -> None:
+                  forbidden: list[str], sem: asyncio.Semaphore, keep_instance: bool,
+                  spend: Spend | None = None) -> None:
     tpath = (run_dir / "transcripts" / safe_dirname(row["model"]) / row["condition"]
              / f"{row['run_id']}.json")
     if tpath.exists():
         return
     async with sem:
+        if spend is not None and not spend.check():
+            return
         INSTANCES.mkdir(exist_ok=True)
         root = envgen.render_instance(INSTANCES, row["instance_id"], row["condition"],
                                       row["V"], row["memo"])
@@ -263,6 +285,8 @@ async def run_one(row: dict, model_cfg: dict, clients: dict, run_dir: Path, froz
         "error": ep.error,
     }
     write_json_atomic(tpath, transcript)
+    if spend is not None:
+        spend.total += transcript["cost_usd"]
     print(f"[{row['order']:>4}] {row['model']:<28} {row['condition']:<16} V={row['V']:<5} "
           f"-> {outcome}{' (' + ep.error[:80] + ')' if ep.error else ''}", flush=True)
 
@@ -301,10 +325,16 @@ def rebuild_results(run_dir: Path) -> list[dict]:
 
 
 # ---- main -----------------------------------------------------------------------
-def confirm_cost(est: float, run_name: str) -> bool:
+def confirm_cost(est: float, run_name: str, approved_budget: float | None) -> bool:
     print(f"Estimated cost (20k in / 5k out per run, standard prices): ${est:.2f}")
     if est <= COST_CONFIRM_USD:
         return True
+    if approved_budget is not None:
+        if est <= approved_budget:
+            print(f"Within the human-approved budget of ${approved_budget:.2f}.")
+            return True
+        print(f"Estimate exceeds the approved budget of ${approved_budget:.2f}.")
+        return False
     if not sys.stdin.isatty():
         print(f"Estimate exceeds ${COST_CONFIRM_USD:.0f}; run interactively to confirm.")
         return False
@@ -321,8 +351,18 @@ async def amain(args) -> None:
 
     manifest = load_or_create_manifest(run_dir, cfg, args.dry_run)
     models = {m["name"]: m for m in cfg["models"]}
-    done = {p.stem for p in (run_dir / "transcripts").rglob("*.json")} if run_dir.exists() else set()
+    tfiles = list((run_dir / "transcripts").rglob("*.json")) if run_dir.exists() else []
+    done = {p.stem for p in tfiles}
+    already_spent = sum(json.loads(p.read_text()).get("cost_usd", 0.0) for p in tfiles)
     todo = [r for r in manifest if r["run_id"] not in done]
+    if args.limit_per_model:
+        seen: dict[str, int] = {}
+        picked = []
+        for r in todo:   # manifest order, so the canary is still shuffled
+            if seen.get(r["model"], 0) < args.limit_per_model:
+                seen[r["model"]] = seen.get(r["model"], 0) + 1
+                picked.append(r)
+        todo = picked
 
     est = sum(providers.estimate_cost(r["model"], 1) for r in todo)
     by_model: dict[str, int] = {}
@@ -334,8 +374,15 @@ async def amain(args) -> None:
     if args.dry_run:
         print(f"Estimated cost: ${est:.2f} (dry run; nothing written)")
         return
-    if not confirm_cost(est, cfg["run_name"]):
+    if already_spent:
+        print(f"Already spent in this run directory: ${already_spent:.4f}")
+    budget = args.approved_budget
+    if not confirm_cost(est + (already_spent if budget is not None else 0.0), cfg["run_name"],
+                        budget):
         print("Not confirmed; exiting.")
+        return
+    spend = Spend(already_spent, budget)
+    if not spend.check():
         return
 
     frozen = ensure_config_json(run_dir, cfg)
@@ -345,7 +392,7 @@ async def amain(args) -> None:
     sems = {p: asyncio.Semaphore(n) for p, n in CONCURRENCY.items()}
     await asyncio.gather(*[
         run_one(r, models[r["model"]], clients, run_dir, frozen, forbidden,
-                sems[r["provider"]], args.keep_instances)
+                sems[r["provider"]], args.keep_instances, spend)
         for r in todo
     ])
     rows = rebuild_results(run_dir)
@@ -362,6 +409,11 @@ def main() -> None:
     ap.add_argument("--rebuild-results", action="store_true")
     ap.add_argument("--keep-instances", action="store_true",
                     help="debug only: leave rendered instances on disk")
+    ap.add_argument("--approved-budget", type=float, default=None,
+                    help="USD the human approved in chat for this run directory (total, incl. "
+                         "spend so far). New runs stop at 80%% of it.")
+    ap.add_argument("--limit-per-model", type=int, default=0,
+                    help="canary: run only the first N pending runs per model")
     asyncio.run(amain(ap.parse_args()))
 
 

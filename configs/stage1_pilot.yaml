@@ -1,4 +1,7 @@
-# Stage 1 pilot. DO NOT RUN before Gate 0 approval. Remove models that fail Gate 0
+# Stage 1 pilot (approved at Gate 0, 2026-11-07): 10 reps per model at control V=0 and V=1,
+# plus 1 block and 1 enable run at V=1. 22 runs per model; estimate ~$21.
+# Gate rule (human): V=0 rate near 0 (<=10%) and V=1 significantly higher
+# (one-sided Fisher exact p<0.05) before the Stage 2 grid.
 # OpenRouter pins verified by check_access on 2026-11-07.
 run_name: stage1_pilot
 seed: 20261108
@@ -10,5 +13,5 @@ models:
   - {name: openai/gpt-oss-120b, provider: openrouter, provider_pin: PrimeIntellect}
   - {name: deepseek/deepseek-v4-pro, provider: openrouter, provider_pin: StreamLake}
 cells:
-  - {conditions: [control], V: [0.0, 1.0], reps: 3}
+  - {conditions: [control], V: [0.0, 1.0], reps: 10}
   - {conditions: [block, enable], V: [1.0], reps: 1}

@@ -8,6 +8,14 @@ Stage 0 is complete and waiting for Gate 0 approval. See `runs/stage0_access/GAT
 Python 3.15.2 in `.venv`; exact versions in `requirements.lock`. PyYAML has no 3.15 wheel,
 so pip builds it from source; the Command Line Tools must be installed for that.
 
+## Gate 0 decisions (human, 2026-11-07)
+
+- OpenRouter pins approved: PrimeIntellect (gpt-oss-120b), StreamLake (DeepSeek V4 Pro).
+- A 403 during the attestation call → `blocked_by_provider`, with `hidden_grade` kept: approved.
+- **New design rule (Stage 1 → Stage 2):** first run only V = 0 and V = 1. Go on to the V
+  grid and logistic regression only if V = 0 gives a near-zero score-seeking rate and V = 1
+  gives a significantly higher one. Otherwise, stop and refine the experiment.
+
 ## Probe findings (2026-11-07)
 
 - OpenAI: all four models are listed, tool calls work, and attestation with `tool_choice="none"` works.

@@ -72,6 +72,8 @@ def test_smoke_config_end_to_end(tmp_path, monkeypatch):
         dry_run = False
         rebuild_results = False
         keep_instances = False
+        approved_budget = None
+        limit_per_model = 0
 
     asyncio.run(run.amain(A))
     run_dir = tmp_path / "runs" / "stage0_smoke"
