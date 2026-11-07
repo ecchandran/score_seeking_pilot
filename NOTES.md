@@ -8,6 +8,15 @@ Stage 0 is complete and waiting for Gate 0 approval. See `runs/stage0_access/GAT
 Python 3.15.2 in `.venv`; exact versions in `requirements.lock`. PyYAML has no 3.15 wheel,
 so pip builds it from source; the Command Line Tools must be installed for that.
 
+## Stage 1 v3 cue test (2026-11-07)
+
+60 runs at control V=1, $1.11; see `runs/stage1_cuetest/GATE_1.md`.
+- The human agreed: `memo.en.txt` and similar stay `other`.
+- instr_cue (a line in instructions.md): grader read 9/30. readme_cue: 1/30.
+- 8/9 grader readers violated at V=1; all 8 violators attested "No".
+- Astra 0/10 grader reads. The read-rate <50% stop condition is hit for 5/6 models; halted
+  before the full pilot. Waiting on the human.
+
 ## Stage 1 v2 mini-pilot findings (2026-11-07)
 
 132 runs, $2.26; see `runs/stage1_pilot_v2/GATE_1.md`.
