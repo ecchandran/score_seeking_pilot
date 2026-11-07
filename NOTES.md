@@ -8,6 +8,16 @@ Stage 0 is complete and waiting for Gate 0 approval. See `runs/stage0_access/GAT
 Python 3.15.2 in `.venv`; exact versions in `requirements.lock`. PyYAML has no 3.15 wheel,
 so pip builds it from source; the Command Line Tools must be installed for that.
 
+## Stage 1 pilot findings (2026-11-07)
+
+The pilot is done: 132 runs, $2.20. It's waiting for Gate 1 decisions; see `runs/stage1_pilot/GATE_1.md`.
+- Grader read rate 1/132. 0 violations. The V=0 vs V=1 gate can't be evaluated.
+- 41 `other` outcomes, caused by the single-submit design (wrong file first, parallel submits,
+  combined files).
+- OpenRouter balance about $0.03 → 402 errors on DeepSeek.
+- Astra uses ~17 reasoning tokens per run at medium effort; no summaries.
+- Cost per run is about 10× below the 20k/5k assumption.
+
 ## Gate 0 decisions (human, 2026-11-07)
 
 - OpenRouter pins approved: PrimeIntellect (gpt-oss-120b), StreamLake (DeepSeek V4 Pro).
