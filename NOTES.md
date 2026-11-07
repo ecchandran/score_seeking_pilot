@@ -1,6 +1,6 @@
 # NOTES
 
-API probe findings and decisions made at gates. Newest first within each section.
+API probe findings and decisions made at gates. Newest first within each section. Experiment results per iteration: FINDINGS.md (summary) and results/<run_name>/ (reports, stats, manifests).
 
 ## Status (2026-11-07)
 

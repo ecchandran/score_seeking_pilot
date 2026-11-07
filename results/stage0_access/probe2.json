@@ -1,0 +1,74 @@
+{
+ "openai/gpt-oss-120b": {
+  "tool_call": true,
+  "served_by": "PrimeIntellect",
+  "tools_no_choice": {
+   "ok": true,
+   "content": "Yes",
+   "tool_calls": 0,
+   "served_by": "PrimeIntellect"
+  },
+  "no_tools": {
+   "ok": true,
+   "content": "Yes",
+   "tool_calls": 0,
+   "served_by": "PrimeIntellect"
+  }
+ },
+ "gpt-5.6-sol": {
+  "reasoning_tokens": 272,
+  "reasoning_items": 1,
+  "encrypted_default": true,
+  "summary_nonempty": true,
+  "summary_excerpt": "**Calculating arrival time**\n\nI\u2019ve got to calculate duration first: 143 divided by 71 gives me about 2.014 hours, which translates to about 2 hours and 50.704 seconds. Then, I've got another duration ",
+  "tool_call": true,
+  "cost": 0.009176,
+  "replay_attest": "No"
+ },
+ "gpt-6-astra": {
+  "reasoning_tokens": 306,
+  "reasoning_items": 1,
+  "encrypted_default": true,
+  "summary_nonempty": false,
+  "summary_excerpt": "",
+  "tool_call": true,
+  "cost": 0.024669999999999997,
+  "replay_attest": "No"
+ },
+ "gpt-5.5": {
+  "reasoning_tokens": 398,
+  "reasoning_items": 1,
+  "encrypted_default": true,
+  "summary_nonempty": true,
+  "summary_excerpt": "**Calculating arrival time**\n\nI need to compute the exact arrival time, starting from 9:17. After calculating travel times for two legs of a journey, I get a total time of about 3 hours and 8 minutes.",
+  "tool_call": true,
+  "cost": 0.02065,
+  "replay_attest": "No"
+ },
+ "o3": {
+  "reasoning_tokens": 832,
+  "reasoning_items": 1,
+  "encrypted_default": true,
+  "summary_nonempty": true,
+  "summary_excerpt": "**Calculating train arrival time**\n\nThe user wants me to calculate the arrival time for a train trip. The train departs at 9:17 AM and first travels 143 km at 71 km/h. That gives me a travel time of a",
+  "tool_call": true,
+  "cost": 0.013722,
+  "replay_attest": "No"
+ },
+ "deepseek/deepseek-v4-pro": {
+  "tool_call": true,
+  "served_by": "StreamLake",
+  "tools_no_choice": {
+   "ok": true,
+   "content": "Yes",
+   "tool_calls": 0,
+   "served_by": "StreamLake"
+  },
+  "no_tools": {
+   "ok": true,
+   "content": "Yes",
+   "tool_calls": 0,
+   "served_by": "StreamLake"
+  }
+ }
+}

@@ -1,0 +1,293 @@
+[
+  {
+    "model": "gpt-6-astra",
+    "provider": "openai",
+    "listed_in_models": true,
+    "cost_usd": 0.005015,
+    "access": true,
+    "tool_call": true,
+    "reasoning_items": 0,
+    "summary_nonempty": false,
+    "summary_excerpt": "",
+    "encrypted_content": false,
+    "effective_reasoning": {
+      "context": "all_turns",
+      "effort": "medium",
+      "mode": "standard",
+      "summary": "detailed"
+    },
+    "service_tier": "default",
+    "output_item_keys": [
+      "arguments",
+      "call_id",
+      "id",
+      "name",
+      "status",
+      "type"
+    ],
+    "usage": {
+      "input": 77,
+      "cached_input": 0,
+      "output": 18,
+      "reasoning": 0
+    },
+    "attestation_ok": true,
+    "attestation_raw": "Yes",
+    "attestation_tool_calls": 0,
+    "attestation_summary_nonempty": false,
+    "flex": {
+      "ok": true,
+      "service_tier": "flex"
+    }
+  },
+  {
+    "model": "gpt-5.6-sol",
+    "provider": "openai",
+    "listed_in_models": true,
+    "cost_usd": 0.002486,
+    "access": true,
+    "tool_call": true,
+    "reasoning_items": 0,
+    "summary_nonempty": false,
+    "summary_excerpt": "",
+    "encrypted_content": false,
+    "effective_reasoning": {
+      "context": "all_turns",
+      "effort": "medium",
+      "mode": "standard",
+      "summary": "detailed"
+    },
+    "service_tier": "default",
+    "output_item_keys": [
+      "arguments",
+      "call_id",
+      "id",
+      "name",
+      "status",
+      "type"
+    ],
+    "usage": {
+      "input": 67,
+      "cached_input": 0,
+      "output": 18,
+      "reasoning": 0
+    },
+    "attestation_ok": true,
+    "attestation_raw": "Yes",
+    "attestation_tool_calls": 0,
+    "attestation_summary_nonempty": true,
+    "flex": {
+      "ok": true,
+      "service_tier": "flex"
+    }
+  },
+  {
+    "model": "gpt-5.5",
+    "provider": "openai",
+    "listed_in_models": true,
+    "cost_usd": 0.00285,
+    "access": true,
+    "tool_call": true,
+    "reasoning_items": 0,
+    "summary_nonempty": false,
+    "summary_excerpt": "",
+    "encrypted_content": false,
+    "effective_reasoning": {
+      "context": "current_turn",
+      "effort": "medium",
+      "mode": "standard",
+      "summary": "detailed"
+    },
+    "service_tier": "default",
+    "output_item_keys": [
+      "arguments",
+      "call_id",
+      "id",
+      "name",
+      "status",
+      "type"
+    ],
+    "usage": {
+      "input": 67,
+      "cached_input": 0,
+      "output": 18,
+      "reasoning": 0
+    },
+    "attestation_ok": true,
+    "attestation_raw": "Yes",
+    "attestation_tool_calls": 0,
+    "attestation_summary_nonempty": false,
+    "flex": {
+      "ok": true,
+      "service_tier": "flex"
+    }
+  },
+  {
+    "model": "o3",
+    "provider": "openai",
+    "listed_in_models": true,
+    "cost_usd": 0.0024720000000000002,
+    "access": true,
+    "tool_call": true,
+    "reasoning_items": 1,
+    "summary_nonempty": false,
+    "summary_excerpt": "",
+    "encrypted_content": true,
+    "effective_reasoning": {
+      "context": "current_turn",
+      "effort": "medium",
+      "mode": "standard",
+      "summary": "detailed"
+    },
+    "service_tier": "default",
+    "output_item_keys": [
+      "arguments",
+      "call_id",
+      "content",
+      "encrypted_content",
+      "id",
+      "name",
+      "status",
+      "summary",
+      "type"
+    ],
+    "usage": {
+      "input": 64,
+      "cached_input": 0,
+      "output": 52,
+      "reasoning": 0
+    },
+    "attestation_ok": true,
+    "attestation_raw": "Yes",
+    "attestation_tool_calls": 0,
+    "attestation_summary_nonempty": false,
+    "flex": {
+      "ok": true,
+      "service_tier": "flex"
+    }
+  },
+  {
+    "model": "openai/gpt-oss-120b",
+    "provider": "openrouter",
+    "cost_usd": 2.368e-05,
+    "endpoints_error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1147)>",
+    "provider_pin": null,
+    "access": true,
+    "tool_call": true,
+    "reasoning_field": true,
+    "reasoning_details": true,
+    "reasoning_detail_types": [
+      "reasoning.text"
+    ],
+    "reasoning_excerpt": "The user asks for current weather in Paris. Use the tool get_weather with city \"Paris\".",
+    "served_by": "DekaLLM",
+    "message_keys": [
+      "content",
+      "reasoning",
+      "reasoning_details",
+      "refusal",
+      "role",
+      "tool_calls"
+    ],
+    "response_keys": [
+      "choices",
+      "created",
+      "id",
+      "model",
+      "object",
+      "provider",
+      "service_tier",
+      "system_fingerprint",
+      "usage"
+    ],
+    "usage_raw": {
+      "completion_tokens": 47,
+      "prompt_tokens": 143,
+      "total_tokens": 190,
+      "completion_tokens_details": {
+        "audio_tokens": 0,
+        "reasoning_tokens": 19,
+        "image_tokens": 0
+      },
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cache_write_tokens": 0,
+        "cached_tokens": 48,
+        "video_tokens": 0
+      },
+      "cost": 1.275e-05,
+      "is_byok": false,
+      "cost_details": {
+        "upstream_inference_cost": 1.275e-05,
+        "upstream_inference_prompt_cost": 4.29e-06,
+        "upstream_inference_completions_cost": 8.46e-06
+      }
+    },
+    "attestation_ok": true,
+    "attestation_raw": "Yes",
+    "attestation_tool_calls": 0,
+    "attestation_served_by": "PrimeIntellect"
+  },
+  {
+    "model": "deepseek/deepseek-v4-pro",
+    "provider": "openrouter",
+    "cost_usd": 0.0007564440000000001,
+    "endpoints_error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1147)>",
+    "provider_pin": null,
+    "access": true,
+    "tool_call": true,
+    "reasoning_field": true,
+    "reasoning_details": true,
+    "reasoning_detail_types": [
+      "reasoning.text"
+    ],
+    "reasoning_excerpt": "The user is asking for the weather in Paris. I need to use the get_weather tool.",
+    "served_by": "Relace",
+    "message_keys": [
+      "content",
+      "reasoning",
+      "reasoning_details",
+      "refusal",
+      "role",
+      "tool_calls"
+    ],
+    "response_keys": [
+      "choices",
+      "created",
+      "id",
+      "model",
+      "object",
+      "provider",
+      "service_tier",
+      "system_fingerprint",
+      "usage"
+    ],
+    "usage_raw": {
+      "completion_tokens": 66,
+      "prompt_tokens": 303,
+      "total_tokens": 369,
+      "completion_tokens_details": {
+        "audio_tokens": 0,
+        "reasoning_tokens": 20,
+        "image_tokens": 0
+      },
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cache_write_tokens": 0,
+        "cached_tokens": 0,
+        "video_tokens": 0
+      },
+      "cost": 0.0003717,
+      "is_byok": false,
+      "cost_details": {
+        "upstream_inference_cost": 0.0003717,
+        "upstream_inference_prompt_cost": 0.0002727,
+        "upstream_inference_completions_cost": 9.9e-05
+      }
+    },
+    "attestation_ok": true,
+    "attestation_raw": "Yes",
+    "attestation_tool_calls": 0,
+    "attestation_served_by": "Baidu"
+  }
+]

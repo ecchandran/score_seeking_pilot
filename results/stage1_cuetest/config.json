@@ -1,0 +1,96 @@
+{
+  "config": {
+    "run_name": "stage1_cuetest",
+    "seed": 20261110,
+    "models": [
+      {
+        "name": "gpt-6-astra",
+        "provider": "openai"
+      },
+      {
+        "name": "gpt-5.6-sol",
+        "provider": "openai"
+      },
+      {
+        "name": "gpt-5.5",
+        "provider": "openai"
+      },
+      {
+        "name": "o3",
+        "provider": "openai"
+      },
+      {
+        "name": "openai/gpt-oss-120b",
+        "provider": "openrouter",
+        "provider_pin": "PrimeIntellect"
+      },
+      {
+        "name": "deepseek/deepseek-v4-pro",
+        "provider": "openrouter",
+        "provider_pin": "StreamLake"
+      }
+    ],
+    "cells": [
+      {
+        "variants": [
+          "instr_cue",
+          "readme_cue"
+        ],
+        "conditions": [
+          "control"
+        ],
+        "V": [
+          1.0
+        ],
+        "reps": 5
+      }
+    ]
+  },
+  "config_hash": "0c27630a31d59f894c6c023f815b83a43bb3b339330993dd2fe5768eb93d7824",
+  "git_hash": "c0f40e40d5006c9f6a86f682cae24aae78fbe175",
+  "template_hashes": {
+    "base/eval.log": "9e7af2d02d82ed1972056ae13295e4bed75f565d05be05b9052e7e984218f476",
+    "base/inbox/document.es.txt": "e1fbbd15c17c87ac5f87b67a80bcd4ea7ea0bec795c66b6023b2f83fe378a58d",
+    "base/inbox/newsletter.fr.txt": "12de066b0906172037bc01acd4e7f8a897517578aad64c8dbc52e0c462ea5e97",
+    "base/instructions.md": "8afc91334c8714064d7b7a3083a654d052a77efff5f641f7e4add62ca83d3e72",
+    "base/metadata/grader.py.tmpl": "81ea925a97f3f96814cd6619d638ffe02f92ef8f3db018073cdd9d8ba9ab4bdd",
+    "base/outbox/document.es.txt": "50dc860ea64f404695b33759d34ab2088e44e61e6505fb8c6e1a7a60380b1080",
+    "base/outbox/newsletter.fr.txt": "76c506e6fc0f02ee02a9d89baff25e9261993d4cd9e406880df35c04b0987a6e",
+    "conditions/block.json": "366bc275a9e8f4e5687c63e2866337327d5cd17e1382be7a217737b10220593a",
+    "conditions/control.json": "7e6bb128bec95dcc4588a0e9c5af8084ddbaaf3da2b2b4e3b60fdbefd60914c9",
+    "conditions/control_approved.json": "7ea01697831db920c24491067033d8d98c839197b0d882e8d37b3aac5f8484d4",
+    "conditions/control_blocked.json": "e8743db7c39fe70e23d398d0b1ca23375fd5b6fa83445e4643c2a94069810071",
+    "conditions/enable.json": "68fdbe137c9685cf5aa1159f45613ca18df73b47d4c8e16d7e8ff4acc81de673",
+    "memo_refs/memo_a.en.txt": "e934c969de084e8b0d80ef9454ffb86b9cbc59d3917be21f6f16a0812a0e0266",
+    "memo_refs/memo_b.en.txt": "e773a1fe57eb0646dec7d36d4fca996f15f22421db0189445786311b50a59fe7",
+    "memo_refs/memo_c.en.txt": "03ed256478ae458fd10478674f2f183a0bd2a6f074d45bdf2059f5f1731eebbe",
+    "memo_refs/memo_d.en.txt": "283430473ec492706d4094acc02c7eb9460c878fccfe8768ff0aa28c956fc41d",
+    "memos/memo_a.de.txt": "3bb29d8f1d8a9de0efaa86fbec49c65178298564be167ce06d4d1b3ff6129ed2",
+    "memos/memo_b.de.txt": "87d7148a2f4e98d8591c3c4fc58809911f46c1dd944a82dd63db939895c463b4",
+    "memos/memo_c.de.txt": "0d825b8bf6ce661705fba4c9f109ba41b0dbc2c15e44218c89df6995c7649a9b",
+    "memos/memo_d.de.txt": "0eb09ccb4b3d231861ad3112d63a9bd952a8ddeda72021bebf17873334a70bca",
+    "variants/instr_cue/_REMOVE": "02b1f76e6d2b3f31f4e2cc0bdee09ce65e0c007d46d3c0caefeb62fac27c0dcb",
+    "variants/instr_cue/instructions.md": "a69362ca64b31c76edd07c266421d196fb240fa502f8f130271e54fdead039b0",
+    "variants/readme_cue/README.md": "65fe45b7f819b8b0d40ed732bb292d6073aac07c5e4a3fbfcea27a4575244e08",
+    "variants/readme_cue/_REMOVE": "02b1f76e6d2b3f31f4e2cc0bdee09ce65e0c007d46d3c0caefeb62fac27c0dcb"
+  },
+  "prompt_tool_hashes": {
+    "system_prompt": "776e84186ddaa3b9834c7f98e53706737a7a2883163eea20b5629c2817b513f5",
+    "user_prompt": "e79060dc0874649aa63d3b5821981e2cdb6d88353727ca8aaaa37320addf4139",
+    "nudge_text": "3d79777aa717d761fffee52fb1aa0d3c0b093118c1c08673694ee1f7ae8c8722",
+    "attestation_text": "30c4065ea5df4a9bbd1eaa74c4896ce1efa2ab09611c141a95a952bf97836b86",
+    "tool_specs": "6dcddc068fad7fbf7e024cb50952c19a19fc41e2b335fc95b52ed206fa6971fe"
+  },
+  "harness_settings": {
+    "max_model_calls": 20,
+    "max_nudges": 2,
+    "read_cap_bytes": 102400,
+    "concurrency": {
+      "openai": 8,
+      "openrouter": 8,
+      "stub": 8
+    }
+  },
+  "python": "3.15.2 (v3.15.2:5e58eaad7c5, Oct 25 2026, 14:19:34) [Clang 21.0.0 (clang-2100.1.1.101)]",
+  "created_at": "2026-11-07T22:58:52.883521+00:00"
+}
