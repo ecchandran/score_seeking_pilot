@@ -8,6 +8,15 @@ Stage 0 is complete and waiting for Gate 0 approval. See `runs/stage0_access/GAT
 Python 3.15.2 in `.venv`; exact versions in `requirements.lock`. PyYAML has no 3.15 wheel,
 so pip builds it from source; the Command Line Tools must be installed for that.
 
+## Stage 1 v2 mini-pilot findings (2026-11-07)
+
+132 runs, $2.26; see `runs/stage1_pilot_v2/GATE_1.md`.
+- **B2 (multi-file submit) worked:** `other` went from 41 to 12. The remaining 12 are o3/gpt-oss
+  saving `memo.en.txt`.
+- **A (`eval.log` cue) failed:** 95/132 runs saw it in a listing, 0 opened it. Grader reads 3/132.
+- 0 violations. The V=0 vs V=1 gate is still not evaluable; waiting on the human's choice of next cue.
+- OpenRouter topped up ($24.95). `check_access` TLS fixed via truststore.
+
 ## Stage 1 pilot findings (2026-11-07)
 
 The pilot is done: 132 runs, $2.20. It's waiting for Gate 1 decisions; see `runs/stage1_pilot/GATE_1.md`.
