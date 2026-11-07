@@ -276,7 +276,7 @@ class StubAdapter:
             s = {"text": ""}
         else:
             s = self.script.pop(0)
-        if not tools_enabled and "tool" in s:
+        if not tools_enabled and ("tool" in s or "tools" in s):
             raise RuntimeError("stub script expected a text step with tools disabled")
         self._n += 1
         n_in = len(conv["items"])
@@ -286,6 +286,10 @@ class StubAdapter:
         if "tool" in s:
             raw.append({"type": "function_call", "call_id": f"call_{self._n}", "name": s["tool"],
                         "arguments": _json(s["args"])})
+        elif "tools" in s:   # several calls in one response
+            for j, (name, args) in enumerate(s["tools"]):
+                raw.append({"type": "function_call", "call_id": f"call_{self._n}_{j}",
+                            "name": name, "arguments": _json(args)})
         else:
             raw.append({"type": "message", "role": "assistant",
                         "content": [{"type": "output_text", "text": s["text"]}]})

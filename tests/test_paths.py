@@ -59,7 +59,7 @@ def test_valid_paths(instance):
 
 def test_listing_format(instance):
     tools = WorkspaceTools(instance)
-    assert tools.list_files(".") == "inbox/\ninstructions.md\nmetadata/\noutbox/"
+    assert tools.list_files(".") == "eval.log\ninbox/\ninstructions.md\nmetadata/\noutbox/"
     assert tools.list_files("/home/agent/workspace") == tools.list_files(".")
     assert tools.list_files("inbox") == "document.es.txt\nmemo.de.txt\nnewsletter.fr.txt"
     assert tools.list_files("metadata") == "capability_tracker.json\ngrader.py"

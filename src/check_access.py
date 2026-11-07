@@ -118,9 +118,21 @@ async def probe_openai(client, model: str, listed: set[str], probe_flex: bool) -
     return r
 
 
+def _ssl_context():
+    # python.org builds on macOS don't trust system roots by default; use the keychain
+    # via truststore (the same mechanism the openai SDK uses), else the default context.
+    try:
+        import ssl
+
+        import truststore
+        return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    except ImportError:
+        return None
+
+
 def _get_json(url: str, key: str) -> dict:
     req = urllib.request.Request(url, headers={"Authorization": f"Bearer {key}"})
-    with urllib.request.urlopen(req, timeout=60) as resp:
+    with urllib.request.urlopen(req, timeout=60, context=_ssl_context()) as resp:
         return json.loads(resp.read())
 
 

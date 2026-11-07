@@ -277,6 +277,7 @@ async def run_one(row: dict, model_cfg: dict, clients: dict, run_dir: Path, froz
         "started_at": started, "ended_at": ended,
         "turns": ep.turns, "files_read": ep.files_read, "nudges": ep.nudges,
         "submit_turn": ep.submit_turn, "submission": ep.submission,
+        "submissions": ep.submissions,
         "hidden_grade": grade, "outcome": outcome, "end_reason": ep.end_reason,
         "blocked_phase": ep.blocked_phase,
         "attestation": ({"raw": att["raw"], "parsed": attest.parse(att["raw"]), **att}
@@ -325,8 +326,16 @@ def rebuild_results(run_dir: Path) -> list[dict]:
 
 
 # ---- main -----------------------------------------------------------------------
+def measured_cost_per_run(run_dir: Path) -> dict[str, float]:
+    costs: dict[str, list[float]] = {}
+    for p in (run_dir / "transcripts").rglob("*.json"):
+        t = json.loads(p.read_text())
+        costs.setdefault(t["model"], []).append(t["cost_usd"])
+    return {m: sum(c) / len(c) for m, c in costs.items() if c}
+
+
 def confirm_cost(est: float, run_name: str, approved_budget: float | None) -> bool:
-    print(f"Estimated cost (20k in / 5k out per run, standard prices): ${est:.2f}")
+    print(f"Estimated cost: ${est:.2f}")
     if est <= COST_CONFIRM_USD:
         return True
     if approved_budget is not None:
@@ -355,6 +364,8 @@ async def amain(args) -> None:
     done = {p.stem for p in tfiles}
     already_spent = sum(json.loads(p.read_text()).get("cost_usd", 0.0) for p in tfiles)
     todo = [r for r in manifest if r["run_id"] not in done]
+    if args.only_models:
+        todo = [r for r in todo if r["model"] in set(args.only_models)]
     if args.limit_per_model:
         seen: dict[str, int] = {}
         picked = []
@@ -364,13 +375,20 @@ async def amain(args) -> None:
                 picked.append(r)
         todo = picked
 
-    est = sum(providers.estimate_cost(r["model"], 1) for r in todo)
+    measured = measured_cost_per_run(Path(args.estimate_from)) if args.estimate_from else {}
+
+    def per_run(m: str) -> float:
+        # measured mean x2 safety margin when available, else the spec's 20k/5k assumption
+        return 2 * measured[m] if m in measured else providers.estimate_cost(m, 1)
+
+    est = sum(per_run(r["model"]) for r in todo)
     by_model: dict[str, int] = {}
     for r in todo:
         by_model[r["model"]] = by_model.get(r["model"], 0) + 1
     print(f"{cfg['run_name']}: {len(manifest)} runs in manifest, {len(todo)} to do")
     for m, n in sorted(by_model.items()):
-        print(f"  {m:<28} {n:>4} runs  ~${providers.estimate_cost(m, n):.2f}")
+        src = "2x measured" if m in measured else "assumed"
+        print(f"  {m:<28} {n:>4} runs  ~${n * per_run(m):.2f} ({src})")
     if args.dry_run:
         print(f"Estimated cost: ${est:.2f} (dry run; nothing written)")
         return
@@ -414,6 +432,10 @@ def main() -> None:
                          "spend so far). New runs stop at 80%% of it.")
     ap.add_argument("--limit-per-model", type=int, default=0,
                     help="canary: run only the first N pending runs per model")
+    ap.add_argument("--only-models", nargs="*", default=None,
+                    help="run only these models' pending runs (others stay pending)")
+    ap.add_argument("--estimate-from", default=None,
+                    help="earlier run dir; estimate cost as 2x its measured mean per model")
     asyncio.run(amain(ap.parse_args()))
 
 

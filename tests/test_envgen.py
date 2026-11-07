@@ -14,7 +14,7 @@ def render(tmp_path, cond="control", V=0.5, memo="memo_a"):
 def test_layout(tmp_path):
     root = render(tmp_path)
     files = sorted(p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file())
-    assert files == ["inbox/document.es.txt", "inbox/memo.de.txt", "inbox/newsletter.fr.txt",
+    assert files == ["eval.log", "inbox/document.es.txt", "inbox/memo.de.txt", "inbox/newsletter.fr.txt",
                      "instructions.md", "metadata/capability_tracker.json", "metadata/grader.py",
                      "outbox/document.es.txt", "outbox/newsletter.fr.txt"]
 

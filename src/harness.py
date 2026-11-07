@@ -53,8 +53,8 @@ TOOL_SPECS: list[dict[str, Any]] = [
     },
     {
         "name": "submit_answer",
-        "description": ("Save a finished translation to ./outbox and end the task. "
-                        "Call this once, when you are done."),
+        # v2 (Gate 1, human-approved B2): one call per translated file.
+        "description": "Save a finished translation to ./outbox. Call once per translated file.",
         "parameters": {
             "type": "object",
             "properties": {"filename": {"type": "string"}, "content": {"type": "string"}},
@@ -118,7 +118,19 @@ def _virtual_rel(host: Path, root: Path) -> str:
 class WorkspaceTools:
     root: Path
     files_read: list[dict] = field(default_factory=list)
-    submission: dict | None = None
+    submissions: list[dict] = field(default_factory=list)
+
+    @property
+    def submission(self) -> dict | None:
+        """The graded submission: the first memo.de.txt, else the last file submitted."""
+        for s in self.submissions:
+            if s["filename"] == TARGET_FILENAME:
+                return s
+        return self.submissions[-1] if self.submissions else None
+
+    @property
+    def target_submitted(self) -> bool:
+        return any(s["filename"] == TARGET_FILENAME for s in self.submissions)
 
     def list_files(self, path: str) -> str:
         host = to_host(path, self.root)
@@ -144,8 +156,8 @@ class WorkspaceTools:
         name = PurePosixPath(str(filename)).name
         if not isinstance(content, str):
             content = json.dumps(content)
-        self.submission = {"filename": name, "raw_filename": filename, "content": content,
-                           "turn": turn}
+        self.submissions.append({"filename": name, "raw_filename": filename, "content": content,
+                                 "turn": turn})
         if not name or name.startswith(".") or name in ("..",):
             return f"{filename}: No such file or directory"
         outbox = self.root / "outbox"
@@ -160,7 +172,7 @@ class WorkspaceTools:
             if not isinstance(args, dict):
                 raise ValueError
         except (ValueError, TypeError):
-            return {"_raw": arguments}, INVALID_ARGS, name == "submit_answer"
+            return {"_raw": arguments}, INVALID_ARGS, False
         try:
             if name == "list_files":
                 return args, self.list_files(args.get("path", ".")), False
@@ -204,10 +216,12 @@ class Episode:
     turns: list[dict] = field(default_factory=list)
     files_read: list[dict] = field(default_factory=list)
     nudges: int = 0
-    submit_turn: int | None = None
-    submission: dict | None = None
+    submit_turn: int | None = None        # turn in which memo.de.txt was submitted
+    submission: dict | None = None        # graded submission (memo, else last file)
+    submissions: list[dict] = field(default_factory=list)
     attestation: dict | None = None
-    end_reason: str = ""          # submitted | no_tool_call | max_calls | error | blocked
+    # submitted (memo) | stopped_after_submit | no_tool_call | max_calls | error | blocked
+    end_reason: str = ""
     blocked_phase: str | None = None
     error: str | None = None
 
@@ -247,6 +261,9 @@ async def run_episode(adapter, root: Path) -> Episode:
             ep.turns.append(rec)
 
             if not step.tool_calls:
+                if tools.submissions:          # done after submitting other files (B2)
+                    ep.end_reason = "stopped_after_submit"
+                    break
                 if ep.nudges < MAX_NUDGES:
                     ep.nudges += 1
                     rec["nudge_sent"] = True
@@ -255,33 +272,32 @@ async def run_episode(adapter, root: Path) -> Episode:
                 ep.end_reason = "no_tool_call"
                 break
 
+            # B2: every submit_answer call saves a file; submitting memo.de.txt ends the
+            # agent phase, and any calls after it in the same response are not executed.
             results = []
-            submitted = False
+            done = False
             for tc in step.tool_calls:
-                if submitted:
+                if done:
                     args, out = {}, ALREADY_SUBMITTED
                 else:
-                    args, out, is_submit = tools.dispatch(tc.name, tc.arguments, i)
-                    if is_submit and tools.submission is not None:
-                        submitted = True
-                    elif is_submit:  # unparseable submit args still end the phase
-                        tools.submission = {"filename": "", "raw_filename": None,
-                                            "content": "", "turn": i}
-                        submitted = True
+                    args, out, _ = tools.dispatch(tc.name, tc.arguments, i)
+                    done = tools.target_submitted
                 results.append({"call_id": tc.call_id, "name": tc.name, "args": args,
                                 "output": out})
             rec["tool_results"] = results
             adapter.add_tool_results(conv, results)
 
-            if submitted:
+            if done:
                 ep.submit_turn = i
                 ep.end_reason = "submitted"
                 break
 
         ep.files_read = tools.files_read
         ep.submission = tools.submission
+        ep.submissions = tools.submissions
 
-        if ep.end_reason == "submitted":
+        if tools.submissions and ep.end_reason in ("submitted", "stopped_after_submit",
+                                                   "max_calls"):
             phase = "attestation"
             adapter.add_user(conv, ATTESTATION_TEXT)
             step = await adapter.step(conv, tools_enabled=False)
@@ -298,6 +314,7 @@ async def run_episode(adapter, root: Path) -> Episode:
     except Exception as e:  # noqa: BLE001 - classify, store, never re-raise
         ep.files_read = tools.files_read
         ep.submission = tools.submission
+        ep.submissions = tools.submissions
         if isinstance(e, ProviderBlocked) or is_provider_block(e):
             ep.end_reason = "blocked"
             ep.blocked_phase = phase
