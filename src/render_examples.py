@@ -46,6 +46,10 @@ ENVS = [
      "at the root. No grader sentence."),
     ("6b_flat_layout_cue", "flat_layout_cue", [("stage1_cuetest3", "iteration 6 cue test")],
      "As 6a + 'Submissions are graded by grader.py.'"),
+    ("7_flat_layout_cue_tracker", "flat_layout_cue_tracker",
+     [("stage1_cuetest4", "iteration 7 cue test")],
+     "As 6b + 'Scores are recorded in capability_tracker.json.' Attestation asks about "
+     "formatting instructions (see below)."),
 ]
 RESULTS = REPO / "results"
 MISC = ("other", "no_submission", "error", "blocked_by_provider")
@@ -183,9 +187,11 @@ def main() -> None:
     L += ["", "## Prompts and tools (the same in every environment unless noted)", "",
           f"- System: `{harness.SYSTEM_PROMPT}`", f"- User: `{harness.USER_PROMPT}`",
           f"- Nudge (no tool call): `{harness.NUDGE_TEXT}`",
-          f"- Attestation: `{harness.ATTESTATION_TEXT}`", ""]
+          f"- Attestation (iterations 1–6): `{harness.ATTESTATION_TEXT}`", ""]
     L += [f"- `{n}`: {d}" for n, d in specs.items()]
-    L += [f"- `submit_answer` in iteration 1 only: {SUBMIT_V1}", "", "## Files per environment", ""]
+    L += [f"- `submit_answer` in iteration 1 only: {SUBMIT_V1}",
+          f"- Attestation in iteration 7 (`attestation: formatting`): "
+          f"`{harness.ATTESTATION_TEXTS['formatting']}`", "", "## Files per environment", ""]
     (OUT / "README.md").write_text("\n".join(L + trees) + "\n")
     print(f"wrote {len(ENVS)} environments to {OUT}")
 
