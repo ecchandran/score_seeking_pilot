@@ -10,6 +10,7 @@ import hashlib
 import json
 import secrets
 import shutil
+import textwrap
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -56,16 +57,44 @@ def tracker_path(variant: str | None = None) -> str:
     return layout(variant)["tracker"]
 
 
+RULE_TOKEN = "__RULE__"   # optional, on its own line: replaced by the condition's tracker summary
+RULE_MARKER = "Deployment (from capability_tracker.json):"
+
+
+def render_rule(condition: str, templates: Path = TEMPLATES) -> str:
+    """The tracker's status and rule as indented docstring lines (iteration 8)."""
+    d = json.loads((templates / "conditions" / f"{condition}.json").read_text())
+    head = (f"  capability_score: {d['capability_score']:.2f}, threshold: {d['threshold']:.2f}, "
+            f"deployment_status: {d['deployment_status']}")
+    body = textwrap.fill(d["rule"], width=76, initial_indent="  ", subsequent_indent="  ",
+                         break_on_hyphens=False)
+    return head + "\n" + body
+
+
 def render_grader(V: float, C: float = C_VALUE, templates: Path = TEMPLATES,
-                  variant: str | None = None) -> str:
+                  variant: str | None = None, condition: str | None = None) -> str:
     tmpl = layout(variant, templates)["grader_tmpl"].read_text()
     assert tmpl.count("__V__") == 1 and tmpl.count("__C__") == 1
-    return tmpl.replace("__V__", format_score(V)).replace("__C__", format_score(C))
+    out = tmpl.replace("__V__", format_score(V)).replace("__C__", format_score(C))
+    if RULE_TOKEN in out:
+        if condition is None:
+            raise ValueError("this grader template needs a condition for its rule")
+        out = out.replace(RULE_TOKEN, render_rule(condition, templates))
+    return out
+
+
+def strip_rule(lines: list[str]) -> list[str]:
+    """Drop the condition-specific rule lines (after RULE_MARKER, up to the closing \"\"\")."""
+    if RULE_MARKER not in lines:
+        return [l for l in lines if l != RULE_TOKEN]
+    i = lines.index(RULE_MARKER)
+    j = lines.index('"""', i)
+    return lines[:i + 1] + lines[j:]
 
 
 def grader_v_line_index(templates: Path = TEMPLATES, variant: str | None = None) -> int:
-    """0-based line number of the `return __V__` line, the only line that varies."""
-    lines = layout(variant, templates)["grader_tmpl"].read_text().splitlines()
+    """0-based line of `return __V__` after strip_rule(): the only line that varies by dose."""
+    lines = strip_rule(layout(variant, templates)["grader_tmpl"].read_text().splitlines())
     return next(i for i, l in enumerate(lines) if "__V__" in l)
 
 
@@ -138,7 +167,7 @@ def render_instance(dest_root: Path, instance_id: str, condition: str, V: float,
     lay = layout(variant, templates)
     for rel in (lay["grader"], lay["tracker"]):
         (dest / rel).parent.mkdir(parents=True, exist_ok=True)
-    (dest / lay["grader"]).write_text(render_grader(V, C_VALUE, templates, variant))
+    (dest / lay["grader"]).write_text(render_grader(V, C_VALUE, templates, variant, condition))
     (dest / lay["tracker"]).write_text(render_tracker(condition, templates))
     shutil.copyfile(templates / "memos" / f"{memo}.de.txt", dest / MEMO_OUT)
     if variant:

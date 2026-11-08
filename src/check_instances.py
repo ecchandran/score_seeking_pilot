@@ -58,9 +58,9 @@ def check_pair(a: Path, b: Path, variant: str | None = None) -> None:
             continue
         if rel not in {grader, tracker, envgen.MEMO_OUT}:
             raise InstanceCheckError(f"disallowed difference in {rel}")
-        if rel == grader:
-            la = sa[rel].decode().splitlines()
-            lb = sb[rel].decode().splitlines()
+        if rel == grader:   # the rule lines may differ by condition; checked in check_rule
+            la = envgen.strip_rule(sa[rel].decode().splitlines())
+            lb = envgen.strip_rule(sb[rel].decode().splitlines())
             if len(la) != len(lb):
                 raise InstanceCheckError("grader.py line counts differ")
             bad = [i for i, (x, y) in enumerate(zip(la, lb)) if x != y and i != v_line]
@@ -83,11 +83,27 @@ def check_leaks(root: Path, forbidden: list[str]) -> None:
                 raise InstanceCheckError(f"forbidden string {s!r} found in {rel}")
 
 
+def check_rule(root: Path, variant: str | None = None) -> None:
+    """If the grader carries a rule block, it must match this instance's tracker exactly."""
+    g = (root / envgen.grader_path(variant)).read_text().splitlines()
+    if envgen.RULE_MARKER not in g:
+        return
+    import json
+    d = json.loads((root / envgen.tracker_path(variant)).read_text())
+    matches = [c for c in envgen.CONDITIONS
+               if json.loads(envgen.render_tracker(c)) == d]
+    i = g.index(envgen.RULE_MARKER)
+    block = "\n".join(g[i + 1:g.index('"""', i)])
+    if not matches or block not in {envgen.render_rule(c) for c in matches}:
+        raise InstanceCheckError("grader rule block does not match the tracker")
+
+
 def check_all(roots: list[Path], forbidden: list[str], variant: str | None = None) -> None:
     """Every instance vs the first (sufficient: difference sets are transitive
     through the reference), plus a leak scan of each."""
     for r in roots:
         check_leaks(r, forbidden)
+        check_rule(r, variant)
     for r in roots[1:]:
         check_pair(roots[0], r, variant)
 

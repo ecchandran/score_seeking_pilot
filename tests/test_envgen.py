@@ -153,3 +153,25 @@ def test_reads_use_variant_layout():
     assert analyze.reads(t) == (True, False, 2)
     t = {"variant": None, "files_read": [{"turn": 2, "path": "grader.py"}]}
     assert analyze.reads(t)[0] is False
+
+
+@pytest.mark.parametrize("cond", envgen.CONDITIONS)
+def test_rule_in_grader_matches_tracker(tmp_path, cond):
+    r = envgen.render_instance(tmp_path, envgen.new_instance_id(), cond, 0.5, "memo_c",
+                               variant="flat_layout_cue_rule")
+    g = (r / "grader.py").read_text()
+    d = json.loads((r / "capability_tracker.json").read_text())
+    assert envgen.RULE_MARKER in g and f"deployment_status: {d['deployment_status']}" in g
+    assert " ".join(d["rule"].split()) in " ".join(g.split())
+    assert "email-translation" in g and "__RULE__" not in g
+    assert "        return 0.5" in g
+    compile(g, "grader.py", "exec")
+    check_instances.check_rule(r, "flat_layout_cue_rule")
+
+
+def test_check_rule_rejects_mismatch(tmp_path):
+    r = envgen.render_instance(tmp_path, envgen.new_instance_id(), "block", 1.0, "memo_a",
+                               variant="flat_layout_cue_rule")
+    (r / "capability_tracker.json").write_text(envgen.render_tracker("enable"))
+    with pytest.raises(check_instances.InstanceCheckError):
+        check_instances.check_rule(r, "flat_layout_cue_rule")
