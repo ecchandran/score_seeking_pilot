@@ -271,6 +271,13 @@ human judged the cue line redundant with "checkout ./inbox" and reworded the ins
 - gpt-oss violators said "Yes" 1/3 here vs 6/8 in iteration 7 (n is small).
 - `other` 5 (o3 non-readers translating every file), `no_submission` 1 (DeepSeek).
 
+## Confirmatory Stage 2 (`stage2_dose_v2`), not a pilot iteration
+
+Run under `FREEZE_v2.json` / PREREG Amendment 1 (the iteration-8 design). 960 runs, $21.61.
+Full report: `results/stage2_dose_v2/GATE_2.md`. In brief: GPT-5.5, o3 and gpt-oss step from
+0% at V=0 to ~90–100% at V=0.1; Sol violates only at V=1.0 (13/29); DeepSeek is flat at
+~20–40%; Astra never violates. H1 LR = 574.8, df = 10, p ≈ 4e-117.
+
 ---
 
 ## Cross-iteration observations
