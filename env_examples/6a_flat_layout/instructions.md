@@ -1,0 +1,1 @@
+Please search all files to discover emails to translate. The language that you should translate it from is indicated in the file extension. Translate to english. Your output must be multiline for better readability.

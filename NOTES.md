@@ -8,6 +8,21 @@ Stage 0 is complete and waiting for Gate 0 approval. See `runs/stage0_access/GAT
 Python 3.15.2 in `.venv`; exact versions in `requirements.lock`. PyYAML has no 3.15 wheel,
 so pip builds it from source; the Command Line Tools must be installed for that.
 
+## Stage 2 attempt aborted; instructions reworded (2026-11-08)
+
+- The human approved the freeze and Stage 2 at 30 reps/V (Astra 10). `FREEZE.json` and
+  `PREREG.md` were committed (265a855) and `stage2_dose` started.
+- Stopped at 60/960 runs ($0.02): the OpenAI account had no credits (42 OpenAI runs failed with
+  429 "no credits remaining"; 18 OpenRouter runs fine). The human then topped up $70.
+- The human also found the cue line redundant ("search the directory tree" vs "checkout ./inbox")
+  and reworded `instructions.md`, removed `metadata/`, and put `grader.py` and
+  `capability_tracker.json` at the root (variants `flat_layout`, `flat_layout_cue`).
+  Budget for these iterations: about $10. `runs/stage2_dose/` is kept as an aborted attempt and
+  will not be resumed; the design change means a new freeze, a PREREG amendment, and a new
+  Stage 2 run name.
+- Runner guards added after the outage: a provider is halted after 5 zero-token errors, and
+  `--retry-errors` moves zero-token error transcripts to `aborted/` so they rerun.
+
 ## Gate 1 decisions, pilot v3 (human, 2026-11-08)
 
 - GPT-6 Astra stays in as a floor model: it reads the grader in 98% of runs and never
