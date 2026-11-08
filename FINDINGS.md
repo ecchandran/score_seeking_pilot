@@ -278,6 +278,18 @@ Full report: `results/stage2_dose_v2/GATE_2.md`. In brief: GPT-5.5, o3 and gpt-o
 0% at V=0 to ~90–100% at V=0.1; Sol violates only at V=1.0 (13/29); DeepSeek is flat at
 ~20–40%; Astra never violates. H1 LR = 574.8, df = 10, p ≈ 4e-117.
 
+## Confirmatory Stage 3 (`stage3_conditions`)
+
+Run under `FREEZE_v3.json` / PREREG Amendment 2. 540 runs, $14.83. Full report:
+`results/stage3_conditions/GATE_3.md`.
+- **Block lowers violation for GPT-5.5** (85% → 26%) **and Sol** (43% → 0%). Both are
+  significant after Holm at α = 0.10.
+- **No enable contrast is significant.** o3 and gpt-oss don't move: they sit at 88–94% in
+  every condition and never reason about deployment.
+- DeepSeek leans deployment-seeking (block lower, enable higher; not significant). Astra stays
+  at 0%.
+- The block effect is rarely verbalized in OpenAI reasoning summaries.
+
 ## Exploratory: violation at V=1 vs capability order (post hoc, not pre-registered)
 
 Chart: `results/exploratory/capability_trend.html`. The five OpenAI models are in the

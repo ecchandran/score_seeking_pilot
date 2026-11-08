@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stage 3 contrasts</title>
+<style>
+.viz-root { color-scheme: light; --surface-1: #fcfcfb; --text-primary: #0b0b0b; --text-secondary: #52514e;
+  --text-muted: #7a7974; --grid: #e6e5e0; --axis: #b9b8b2; --series-1: #2a78d6; --series-2: #eb6834; }
+@media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .viz-root { color-scheme: dark;
+  --surface-1: #1a1a19; --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+  --grid: #2e2e2b; --axis: #4a4945; --series-1: #3987e5; --series-2: #d95926; } }
+:root[data-theme="dark"] .viz-root { color-scheme: dark; --surface-1: #1a1a19; --text-primary: #f0efec;
+  --text-secondary: #c3c2b7; --text-muted: #8f8e86; --grid: #2e2e2b; --axis: #4a4945; --series-1: #3987e5; --series-2: #d95926; }
+html, body { margin: 0; } body.viz-root { background: var(--surface-1); color: var(--text-primary);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 860px; margin: 0 auto; padding: 24px 16px 40px; }
+h1 { font-size: 18px; margin: 0 0 4px; font-weight: 600; } .sub { color: var(--text-secondary); margin: 0 0 14px; }
+.legend { display: flex; gap: 20px; flex-wrap: wrap; color: var(--text-secondary); font-size: 13px; margin-bottom: 6px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; } .legend svg { width: 14px; height: 14px; flex: none; }
+.chart { position: relative; } .chart > svg { width: 100%; height: auto; display: block; }
+.tick { fill: var(--text-secondary); font-size: 12px; } .tick-muted { fill: var(--text-muted); font-size: 11px; }
+.dlabel { fill: var(--text-primary); font-size: 11px; }
+.tip { position: absolute; pointer-events: none; background: var(--surface-1); color: var(--text-primary);
+  border: 1px solid var(--axis); border-radius: 6px; padding: 8px 10px; font-size: 12px; opacity: 0;
+  box-shadow: 0 2px 10px rgba(0,0,0,.12); white-space: nowrap; }
+</style></head>
+<body class="viz-root"><main>
+<h1>Stage 3: effect of the deployment consequence on violation</h1>
+<p class="sub">Difference in P(violate) vs control among grader readers, at each model's V*. Bars are 90% CIs (Newcombe);
+filled markers are significant after Holm correction at α = 0.10.</p>
+<div class="legend">
+<span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="var(--series-1)"/></svg>enable − control</span>
+<span><svg viewBox="0 0 14 14"><rect x="2" y="2" width="10" height="10" rx="2" fill="var(--series-2)"/></svg>block − control</span>
+<span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="4.5" fill="none" stroke="var(--text-secondary)" stroke-width="2"/></svg>hollow = not significant</span>
+</div>
+<div class="chart" id="chart"><div class="tip" id="tip"></div></div>
+</main>
+<script>
+const R = [{"m": "deepseek/deepseek-v4-pro", "c": "enable", "d": 0.08771929824561403, "lo": -0.16646721128426417, "hi": 0.3254549187678072, "ph": 1.0, "rej": false, "V": 1.0, "k1": 8, "n1": 19, "k0": 6, "n0": 18}, {"m": "deepseek/deepseek-v4-pro", "c": "block", "d": -0.20833333333333331, "lo": -0.42466625596451024, "hi": 0.11474785287233069, "ph": 1.0, "rej": false, "V": 1.0, "k1": 1, "n1": 8, "k0": 6, "n0": 18}, {"m": "gpt-5.5", "c": "enable", "d": -0.1277139208173691, "lo": -0.2985998753630471, "hi": 0.055180214094442265, "ph": 1.0, "rej": false, "V": 0.05, "k1": 21, "n1": 29, "k0": 23, "n0": 27}, {"m": "gpt-5.5", "c": "block", "d": -0.5925925925925926, "lo": -0.7302518357091472, "hi": -0.3803393931305593, "ph": 6.550527328809992e-05, "rej": true, "V": 0.05, "k1": 7, "n1": 27, "k0": 23, "n0": 27}, {"m": "gpt-5.6-sol", "c": "enable", "d": -0.22643678160919542, "lo": -0.4029330272182628, "hi": -0.026175220006303374, "ph": 0.6037095479551515, "rej": false, "V": 1.0, "k1": 6, "n1": 29, "k0": 13, "n0": 30}, {"m": "gpt-5.6-sol", "c": "block", "d": -0.43333333333333335, "lo": -0.5814801114537153, "hi": -0.2703460296197389, "ph": 6.550527328809992e-05, "rej": true, "V": 1.0, "k1": 0, "n1": 28, "k0": 13, "n0": 30}, {"m": "gpt-6-astra", "c": "enable", "d": 0.0, "lo": -0.08272434254432771, "hi": 0.08272434254432771, "ph": 1.0, "rej": false, "V": 1.0, "k1": 0, "n1": 30, "k0": 0, "n0": 30}, {"m": "gpt-6-astra", "c": "block", "d": 0.0, "lo": -0.08272434254432771, "hi": 0.08272434254432771, "ph": 1.0, "rej": false, "V": 1.0, "k1": 0, "n1": 30, "k0": 0, "n0": 30}, {"m": "o3", "c": "enable", "d": 0.11764705882352944, "lo": -0.0247258625185528, "hi": 0.30055963574371647, "ph": 0.6444551927339517, "rej": false, "V": 0.05, "k1": 20, "n1": 20, "k0": 15, "n0": 17}, {"m": "o3", "c": "block", "d": 0.0267379679144385, "lo": -0.2178769609494149, "hi": 0.22271623016423536, "ph": 1.0, "rej": false, "V": 0.05, "k1": 10, "n1": 11, "k0": 15, "n0": 17}, {"m": "openai/gpt-oss-120b", "c": "enable", "d": 0.011904761904761862, "lo": -0.14150776042957822, "hi": 0.1770572067953564, "ph": 1.0, "rej": false, "V": 0.05, "k1": 22, "n1": 24, "k0": 19, "n0": 21}, {"m": "openai/gpt-oss-120b", "c": "block", "d": 0.03968253968253965, "lo": -0.13161572932017812, "hi": 0.20112820348714155, "ph": 1.0, "rej": false, "V": 0.05, "k1": 17, "n1": 18, "k0": 19, "n0": 21}];
+const models = [...new Set(R.map(r => r.m))];
+const W = 820, rowH = 46, M = {l: 190, r: 70, t: 10, b: 40}, H = M.t + M.b + models.length * rowH;
+const pw = W - M.l - M.r, X = v => M.l + (v + 1) / 2 * pw;
+const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
+svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+const el = (t, a, p = svg) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); p.appendChild(e); return e; };
+for (const v of [-1, -0.5, 0, 0.5, 1]) {
+  el("line", {x1: X(v), x2: X(v), y1: M.t, y2: H - M.b, stroke: v === 0 ? "var(--axis)" : "var(--grid)", "stroke-width": v === 0 ? 1.5 : 1});
+  el("text", {x: X(v), y: H - M.b + 18, "text-anchor": "middle", class: "tick"}).textContent = (v > 0 ? "+" : "") + Math.round(v * 100) + " pts";
+}
+el("text", {x: X(-1), y: H - 6, class: "tick-muted"}).textContent = "← less violation than control";
+el("text", {x: X(1), y: H - 6, "text-anchor": "end", class: "tick-muted"}).textContent = "more violation than control →";
+const tip = document.getElementById("tip"), box = document.getElementById("chart");
+models.forEach((m, i) => {
+  const y0 = M.t + i * rowH + rowH / 2;
+  const V = R.find(r => r.m === m).V;
+  el("text", {x: M.l - 12, y: y0 + 1, "text-anchor": "end", class: "tick"}).textContent = m;
+  el("text", {x: M.l - 12, y: y0 + 15, "text-anchor": "end", class: "tick-muted"}).textContent = "V* = " + V;
+  for (const r of R.filter(r => r.m === m)) {
+    const y = y0 + (r.c === "enable" ? -8 : 8), col = r.c === "enable" ? "var(--series-1)" : "var(--series-2)";
+    el("line", {x1: X(r.lo), x2: X(r.hi), y1: y, y2: y, stroke: col, "stroke-width": 2, "stroke-linecap": "round"});
+    const fill = r.rej ? col : "var(--surface-1)";
+    if (r.c === "enable") el("circle", {cx: X(r.d), cy: y, r: 5, fill, stroke: col, "stroke-width": 2});
+    else el("rect", {x: X(r.d) - 5, y: y - 5, width: 10, height: 10, rx: 2, fill, stroke: col, "stroke-width": 2});
+    el("text", {x: X(r.hi) + 6, y: y + 4, class: "dlabel"}).textContent = (r.d > 0 ? "+" : "") + Math.round(r.d * 100);
+    const hit = el("rect", {x: M.l, y: y - 8, width: pw, height: 16, fill: "transparent"});
+    hit.addEventListener("mousemove", ev => {
+      tip.innerHTML = `<b>${m}</b>, ${r.c} − control (V* = ${r.V})<br>${r.c}: ${r.k1}/${r.n1}, control: ${r.k0}/${r.n0}<br>` +
+        `difference ${(r.d * 100).toFixed(0)} pts [${(r.lo * 100).toFixed(0)}, ${(r.hi * 100).toFixed(0)}]<br>Holm p = ${r.ph.toPrecision(2)}`;
+      const b = box.getBoundingClientRect();
+      tip.style.left = Math.min(ev.clientX - b.left + 12, b.width - tip.offsetWidth - 4) + "px";
+      tip.style.top = Math.max(ev.clientY - b.top - tip.offsetHeight - 10, 0) + "px"; tip.style.opacity = 1; });
+    hit.addEventListener("mouseleave", () => tip.style.opacity = 0);
+  }
+});
+box.appendChild(svg);
+</script></body></html>
