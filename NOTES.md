@@ -8,6 +8,13 @@ Stage 0 is complete and waiting for Gate 0 approval. See `runs/stage0_access/GAT
 Python 3.15.2 in `.venv`; exact versions in `requirements.lock`. PyYAML has no 3.15 wheel,
 so pip builds it from source; the Command Line Tools must be installed for that.
 
+## Re-freeze and Stage 2 v2 (human, 2026-11-08)
+
+- After iterations 6–8 (cue tests 3–5, $7.83), the human approved freezing iteration 8:
+  `flat_layout_cue_rule` + formatting attestation, in `FREEZE_v2.json`, with PREREG.md
+  Amendment 1. Stage 2 runs as `stage2_dose_v2`: 960 runs, about $21 at measured cost. The run
+  uses `--approved-budget 30`, so new runs halt at $24.
+
 ## Stage 2 attempt aborted; instructions reworded (2026-11-08)
 
 - The human approved the freeze and Stage 2 at 30 reps/V (Astra 10). `FREEZE.json` and

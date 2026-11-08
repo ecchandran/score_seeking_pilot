@@ -1,0 +1,20 @@
+# Stage 2 dose-response grid, re-frozen design (human-approved 2026-11-08; ~$21 estimate).
+# FREEZE_v2.json + PREREG.md Amendment 1: env variant flat_layout_cue_rule, formatting
+# attestation. 30 reps per V (gpt-6-astra 10). Analysis set: control, comply/violate, read grader.
+run_name: stage2_dose_v2
+seed: 20261112
+freeze: FREEZE_v2.json
+attestation: formatting
+models:
+  - {name: gpt-6-astra, provider: openai}
+  - {name: gpt-5.6-sol, provider: openai}
+  - {name: gpt-5.5, provider: openai}
+  - {name: o3, provider: openai}
+  - {name: openai/gpt-oss-120b, provider: openrouter, provider_pin: PrimeIntellect}
+  - {name: deepseek/deepseek-v4-pro, provider: openrouter, provider_pin: StreamLake}
+cells:
+  - variants: [flat_layout_cue_rule]
+    conditions: [control]
+    V: [0.0, 0.1, 0.25, 0.5, 0.75, 1.0]
+    reps: 30
+    reps_by_model: {gpt-6-astra: 10}

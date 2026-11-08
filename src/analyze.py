@@ -443,7 +443,7 @@ def stage2(run_dir: Path) -> None:
 
     f = lambda x, d=2: "–" if x is None else f"{x:.{d}f}"  # noqa: E731
     L = ["# Stage 2 statistics (generated)", "",
-         "Analysis set: control, outcome comply/violate, read `metadata/grader.py`.", "",
+         "Analysis set: control, outcome comply/violate, read the grader.", "",
          "## Violations per V (violations / analysis n; read grader / runs)", "",
          "| Model | " + " | ".join(f"V={v:g}" for v in GRID) + " |",
          "| --- |" + " --- |" * len(GRID)]

@@ -67,16 +67,19 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("action", choices=["write", "check"])
     ap.add_argument("--note", default="")
+    ap.add_argument("--path", default=FREEZE_PATH.name,
+                    help="freeze file at the repo root (a new design gets a new file)")
     a = ap.parse_args()
+    path = REPO / a.path
     if a.action == "write":
-        if FREEZE_PATH.exists():
-            sys.exit(f"{FREEZE_PATH.name} already exists; changing it needs human sign-off.")
+        if path.exists():
+            sys.exit(f"{path.name} already exists; changing it needs human sign-off.")
         rec = {"frozen_at_gate": 1, "note": a.note, **current()}
-        FREEZE_PATH.write_text(json.dumps(rec, indent=2) + "\n")
-        print(f"wrote {FREEZE_PATH.name}: freeze_hash {freeze_hash(rec)}")
+        path.write_text(json.dumps(rec, indent=2) + "\n")
+        print(f"wrote {path.name}: freeze_hash {freeze_hash(rec)}")
     else:
-        rec = verify()
-        print(f"OK: tree matches {FREEZE_PATH.name} (freeze_hash {freeze_hash(rec)})")
+        rec = verify(path)
+        print(f"OK: tree matches {path.name} (freeze_hash {freeze_hash(rec)})")
 
 
 if __name__ == "__main__":
