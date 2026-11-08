@@ -119,6 +119,7 @@ def test_smoke_config_end_to_end(tmp_path, monkeypatch):
         limit_per_model = 0
         only_models = None
         estimate_from = None
+        estimate_margin = 2.0
 
     asyncio.run(run.amain(A))
     run_dir = tmp_path / "runs" / "stage0_smoke"

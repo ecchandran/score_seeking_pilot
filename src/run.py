@@ -384,8 +384,8 @@ async def amain(args) -> None:
     measured = measured_cost_per_run(Path(args.estimate_from)) if args.estimate_from else {}
 
     def per_run(m: str) -> float:
-        # measured mean x2 safety margin when available, else the spec's 20k/5k assumption
-        return 2 * measured[m] if m in measured else providers.estimate_cost(m, 1)
+        # measured mean x margin when available, else the spec's 20k/5k assumption
+        return args.estimate_margin * measured[m] if m in measured else providers.estimate_cost(m, 1)
 
     est = sum(per_run(r["model"]) for r in todo)
     by_model: dict[str, int] = {}
@@ -393,7 +393,7 @@ async def amain(args) -> None:
         by_model[r["model"]] = by_model.get(r["model"], 0) + 1
     print(f"{cfg['run_name']}: {len(manifest)} runs in manifest, {len(todo)} to do")
     for m, n in sorted(by_model.items()):
-        src = "2x measured" if m in measured else "assumed"
+        src = f"{args.estimate_margin:g}x measured" if m in measured else "assumed"
         print(f"  {m:<28} {n:>4} runs  ~${n * per_run(m):.2f} ({src})")
     if args.dry_run:
         print(f"Estimated cost: ${est:.2f} (dry run; nothing written)")
@@ -441,7 +441,9 @@ def main() -> None:
     ap.add_argument("--only-models", nargs="*", default=None,
                     help="run only these models' pending runs (others stay pending)")
     ap.add_argument("--estimate-from", default=None,
-                    help="earlier run dir; estimate cost as 2x its measured mean per model")
+                    help="earlier run dir; estimate cost from its measured mean per model")
+    ap.add_argument("--estimate-margin", type=float, default=2.0,
+                    help="multiplier on the measured mean (default 2)")
     asyncio.run(amain(ap.parse_args()))
 
 
