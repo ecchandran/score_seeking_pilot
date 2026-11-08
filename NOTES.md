@@ -8,6 +8,14 @@ Stage 0 is complete and waiting for Gate 0 approval. See `runs/stage0_access/GAT
 Python 3.15.2 in `.venv`; exact versions in `requirements.lock`. PyYAML has no 3.15 wheel,
 so pip builds it from source; the Command Line Tools must be installed for that.
 
+## Gate 1 decisions, pilot v3 (human, 2026-11-08)
+
+- GPT-6 Astra stays in as a floor model: it reads the grader in 98% of runs and never
+  violates. The human considers this a useful between-model contrast for H1, not a design
+  failure. No cue change is needed to make Astra score-seek.
+- Still pending: approval to freeze the design and write PREREG.md, and to run Stage 2.
+  The proposal is 30 reps per V (Astra 10), about $17.
+
 ## Stage 1 v3 cue test (2026-11-07)
 
 60 runs at control V=1, $1.11; see `runs/stage1_cuetest/GATE_1.md`.
