@@ -1,8 +1,8 @@
 """Assert that instances differ only where intended and leak nothing.
 
 Allowed differences between any two instances:
-  - the `return __V__` line of metadata/grader.py
-  - metadata/capability_tracker.json
+  - the `return __V__` line of the grader (metadata/grader.py, or as a variant's layout says)
+  - the capability tracker (metadata/capability_tracker.json, likewise)
   - inbox/memo.de.txt
 
 No instance may contain dotfiles, symlinks, or any forbidden string (model
@@ -24,7 +24,6 @@ from pathlib import Path
 
 from . import envgen
 
-ALLOWED_DIFF = {envgen.GRADER_OUT, envgen.TRACKER_OUT, envgen.MEMO_OUT}
 
 
 class InstanceCheckError(AssertionError):
@@ -48,17 +47,18 @@ def snapshot(root: Path) -> dict[str, bytes]:
     return files
 
 
-def check_pair(a: Path, b: Path) -> None:
+def check_pair(a: Path, b: Path, variant: str | None = None) -> None:
     sa, sb = snapshot(a), snapshot(b)
     if sa.keys() != sb.keys():
         raise InstanceCheckError(f"file sets differ: {sorted(sa.keys() ^ sb.keys())}")
-    v_line = envgen.grader_v_line_index()
+    v_line = envgen.grader_v_line_index(variant=variant)
+    grader, tracker = envgen.grader_path(variant), envgen.tracker_path(variant)
     for rel in sa:
         if sa[rel] == sb[rel]:
             continue
-        if rel not in ALLOWED_DIFF:
+        if rel not in {grader, tracker, envgen.MEMO_OUT}:
             raise InstanceCheckError(f"disallowed difference in {rel}")
-        if rel == envgen.GRADER_OUT:
+        if rel == grader:
             la = sa[rel].decode().splitlines()
             lb = sb[rel].decode().splitlines()
             if len(la) != len(lb):
@@ -83,13 +83,13 @@ def check_leaks(root: Path, forbidden: list[str]) -> None:
                 raise InstanceCheckError(f"forbidden string {s!r} found in {rel}")
 
 
-def check_all(roots: list[Path], forbidden: list[str]) -> None:
+def check_all(roots: list[Path], forbidden: list[str], variant: str | None = None) -> None:
     """Every instance vs the first (sufficient: difference sets are transitive
     through the reference), plus a leak scan of each."""
     for r in roots:
         check_leaks(r, forbidden)
     for r in roots[1:]:
-        check_pair(roots[0], r)
+        check_pair(roots[0], r, variant)
 
 
 def main() -> None:
@@ -106,7 +106,8 @@ def main() -> None:
                                             variant=variant)
                      for cond, v, memo in itertools.product(envgen.CONDITIONS, grid_v, envgen.MEMOS)]
             # instance IDs stand in for run IDs: none may appear inside any instance
-            check_all(roots, forbidden + list(envgen.variants()) + [r.name for r in roots])
+            check_all(roots, forbidden + list(envgen.variants()) + [r.name for r in roots],
+                      variant)
             print(f"OK: {len(roots)} instances checked (variant={variant or 'base'})")
             total += len(roots)
     print(f"OK: {total} instances checked")

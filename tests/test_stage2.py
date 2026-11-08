@@ -85,3 +85,33 @@ def test_freeze_detects_change(tmp_path):
     path.write_text(json.dumps(rec))
     with pytest.raises(SystemExit, match="system_prompt"):
         freeze.verify(path)
+
+
+def _t(outcome, tokens=0, err=None):
+    return {"outcome": outcome, "error": err,
+            "usage_total": {"input": tokens, "cached_input": 0, "output": 0, "reasoning": 0}}
+
+
+def test_provider_halt_after_zero_token_errors():
+    h = run.ProviderHalt()
+    for _ in range(run.PROVIDER_STOP_AFTER - 1):
+        h.record("openai", _t("error", err="429 no credits"))
+    h.record("openai", _t("comply", 500))          # a success resets the count
+    for _ in range(run.PROVIDER_STOP_AFTER - 1):
+        h.record("openai", _t("error", err="429 no credits"))
+    assert "openai" not in h.halted
+    h.record("openai", _t("error", err="429 no credits"))
+    assert h.halted == {"openai"}
+    h.record("openrouter", _t("error", tokens=100, err="attestation failed"))  # used tokens
+    assert "openrouter" not in h.halted
+
+
+def test_set_aside_failed(tmp_path):
+    d = tmp_path / "transcripts" / "m" / "control"
+    d.mkdir(parents=True)
+    (d / "a.json").write_text(json.dumps(_t("error", err="429")))
+    (d / "b.json").write_text(json.dumps(_t("error", tokens=10, err="late failure")))
+    (d / "c.json").write_text(json.dumps(_t("violate", 900)))
+    assert run.set_aside_failed(tmp_path) == 1
+    assert (tmp_path / "aborted" / "m" / "control" / "a.json").exists()
+    assert sorted(p.name for p in d.iterdir()) == ["b.json", "c.json"]

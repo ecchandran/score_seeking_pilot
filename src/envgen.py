@@ -34,15 +34,38 @@ def format_score(x: float) -> str:
     return s + "0" if s.endswith(".") else s  # 0.5 -> "0.5", 1.0 -> "1.0", 0.25 -> "0.25"
 
 
-def render_grader(V: float, C: float = C_VALUE, templates: Path = TEMPLATES) -> str:
-    tmpl = (templates / "base" / GRADER_TMPL).read_text()
+def layout(variant: str | None = None, templates: Path = TEMPLATES) -> dict:
+    """Where the grader and tracker live. A variant may relocate them with _LAYOUT.json:
+    {"grader": <path>, "tracker": <path>, "grader_tmpl": <file in the variant dir>}."""
+    out = {"grader": GRADER_OUT, "tracker": TRACKER_OUT,
+           "grader_tmpl": templates / "base" / GRADER_TMPL}
+    if variant:
+        lf = templates / "variants" / variant / LAYOUT_FILE
+        if lf.exists():
+            d = json.loads(lf.read_text())
+            out = {"grader": d["grader"], "tracker": d["tracker"],
+                   "grader_tmpl": templates / "variants" / variant / d["grader_tmpl"]}
+    return out
+
+
+def grader_path(variant: str | None = None) -> str:
+    return layout(variant)["grader"]
+
+
+def tracker_path(variant: str | None = None) -> str:
+    return layout(variant)["tracker"]
+
+
+def render_grader(V: float, C: float = C_VALUE, templates: Path = TEMPLATES,
+                  variant: str | None = None) -> str:
+    tmpl = layout(variant, templates)["grader_tmpl"].read_text()
     assert tmpl.count("__V__") == 1 and tmpl.count("__C__") == 1
     return tmpl.replace("__V__", format_score(V)).replace("__C__", format_score(C))
 
 
-def grader_v_line_index(templates: Path = TEMPLATES) -> int:
+def grader_v_line_index(templates: Path = TEMPLATES, variant: str | None = None) -> int:
     """0-based line number of the `return __V__` line, the only line that varies."""
-    lines = (templates / "base" / GRADER_TMPL).read_text().splitlines()
+    lines = layout(variant, templates)["grader_tmpl"].read_text().splitlines()
     return next(i for i, l in enumerate(lines) if "__V__" in l)
 
 
@@ -56,6 +79,8 @@ def new_instance_id() -> str:
 
 
 REMOVE_FILE = "_REMOVE"  # in a variant dir: base-relative paths to delete, one per line
+LAYOUT_FILE = "_LAYOUT.json"  # in a variant dir: relocates grader/tracker (see layout())
+# Files in a variant dir whose name starts with "_" are control files, never copied.
 
 
 def variants(templates: Path = TEMPLATES) -> tuple[str, ...]:
@@ -74,7 +99,7 @@ def apply_variant(dest: Path, variant: str, templates: Path = TEMPLATES) -> None
             (dest / rel).unlink()
     for src in sorted(vdir.rglob("*")):
         rel = src.relative_to(vdir)
-        if rel.as_posix() == REMOVE_FILE or any(p.startswith(".") for p in rel.parts):
+        if any(p.startswith((".", "_")) for p in rel.parts):
             continue
         target = dest / rel
         if src.is_dir():
@@ -110,11 +135,17 @@ def render_instance(dest_root: Path, instance_id: str, condition: str, V: float,
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(src, target)
 
-    (dest / GRADER_OUT).write_text(render_grader(V, C_VALUE, templates))
-    (dest / TRACKER_OUT).write_text(render_tracker(condition, templates))
+    lay = layout(variant, templates)
+    for rel in (lay["grader"], lay["tracker"]):
+        (dest / rel).parent.mkdir(parents=True, exist_ok=True)
+    (dest / lay["grader"]).write_text(render_grader(V, C_VALUE, templates, variant))
+    (dest / lay["tracker"]).write_text(render_tracker(condition, templates))
     shutil.copyfile(templates / "memos" / f"{memo}.de.txt", dest / MEMO_OUT)
     if variant:
         apply_variant(dest, variant, templates)
+    for d in sorted((p for p in dest.rglob("*") if p.is_dir()), reverse=True):
+        if not any(d.iterdir()):   # e.g. metadata/ when a layout moves both files out
+            d.rmdir()
     return dest
 
 

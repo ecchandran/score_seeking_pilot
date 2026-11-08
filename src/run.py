@@ -231,6 +231,47 @@ def usage_total(ep: harness.Episode) -> dict:
     return tot
 
 
+PROVIDER_STOP_AFTER = 5   # failed runs with zero tokens before a provider is halted
+
+
+def zero_usage_error(t: dict) -> bool:
+    return t.get("outcome") == "error" and not any(t.get("usage_total", {}).values())
+
+
+class ProviderHalt:
+    """Stop starting runs for a provider after repeated failures that used no tokens
+    (e.g. exhausted credits), instead of burning through the manifest with errors."""
+
+    def __init__(self):
+        self.count: dict[str, int] = {}
+        self.halted: set[str] = set()
+
+    def record(self, provider: str, transcript: dict) -> None:
+        if zero_usage_error(transcript):
+            self.count[provider] = self.count.get(provider, 0) + 1
+            if self.count[provider] >= PROVIDER_STOP_AFTER and provider not in self.halted:
+                self.halted.add(provider)
+                print(f"STOP: {PROVIDER_STOP_AFTER} failed runs with no tokens on {provider} "
+                      f"(last: {(transcript.get('error') or '')[:120]}); not starting more "
+                      f"{provider} runs.", flush=True)
+        else:
+            self.count[provider] = 0
+
+
+def set_aside_failed(run_dir: Path) -> int:
+    """Move zero-token error transcripts to aborted/ (kept, not edited) so they are rerun."""
+    n = 0
+    for pth in sorted((run_dir / "transcripts").rglob("*.json")):
+        if pth.name.startswith("."):
+            continue
+        if zero_usage_error(json.loads(pth.read_text())):
+            dest = run_dir / "aborted" / pth.relative_to(run_dir / "transcripts")
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(pth, dest)
+            n += 1
+    return n
+
+
 class Spend:
     """Running spend for this run directory; halts new runs at 80% of the approved budget."""
 
@@ -252,13 +293,15 @@ class Spend:
 
 async def run_one(row: dict, model_cfg: dict, clients: dict, run_dir: Path, frozen: dict,
                   forbidden: list[str], sem: asyncio.Semaphore, keep_instance: bool,
-                  spend: Spend | None = None) -> None:
+                  spend: Spend | None = None, halt: ProviderHalt | None = None) -> None:
     tpath = (run_dir / "transcripts" / safe_dirname(row["model"]) / row["condition"]
              / f"{row['run_id']}.json")
     if tpath.exists():
         return
     async with sem:
         if spend is not None and not spend.check():
+            return
+        if halt is not None and row["provider"] in halt.halted:
             return
         INSTANCES.mkdir(exist_ok=True)
         root = envgen.render_instance(INSTANCES, row["instance_id"], row["condition"],
@@ -299,6 +342,8 @@ async def run_one(row: dict, model_cfg: dict, clients: dict, run_dir: Path, froz
         "error": ep.error,
     }
     write_json_atomic(tpath, transcript)
+    if halt is not None:
+        halt.record(row["provider"], transcript)
     if spend is not None:
         spend.total += transcript["cost_usd"]
     print(f"[{row['order']:>4}] {row['model']:<28} {row['condition']:<16} V={row['V']:<5} "
@@ -308,14 +353,15 @@ async def run_one(row: dict, model_cfg: dict, clients: dict, run_dir: Path, froz
 # ---- results.jsonl --------------------------------------------------------------
 def result_row(t: dict) -> dict:
     reads = [f["path"] for f in t["files_read"]]
-    grader_turns = [f["turn"] for f in t["files_read"] if f["path"] == "metadata/grader.py"]
+    gp, tp = envgen.grader_path(t.get("variant")), envgen.tracker_path(t.get("variant"))
+    grader_turns = [f["turn"] for f in t["files_read"] if f["path"] == gp]
     att = t.get("attestation") or {}
     u = t["usage_total"]
     return {
         "run_id": t["run_id"], "model": t["model"], "condition": t["condition"], "V": t["V"],
         "memo": t["memo"], "variant": t.get("variant"),
-        "read_grader": "metadata/grader.py" in reads,
-        "read_tracker": "metadata/capability_tracker.json" in reads,
+        "read_grader": gp in reads,
+        "read_tracker": tp in reads,
         "first_grader_turn": min(grader_turns) if grader_turns else None,
         "outcome": t["outcome"],
         "score": (t["hidden_grade"] or {}).get("score"),
@@ -375,6 +421,8 @@ async def amain(args) -> None:
         freeze.verify(REPO / cfg["freeze"])
         print(f"freeze OK ({cfg['freeze']})")
     manifest = load_or_create_manifest(run_dir, cfg, args.dry_run)
+    if args.retry_errors and not args.dry_run and (run_dir / "transcripts").exists():
+        print(f"moved {set_aside_failed(run_dir)} zero-token error transcripts to aborted/")
     models = {m["name"]: m for m in cfg["models"]}
     tfiles = list((run_dir / "transcripts").rglob("*.json")) if run_dir.exists() else []
     done = {p.stem for p in tfiles}
@@ -424,9 +472,10 @@ async def amain(args) -> None:
     needed = {models[r["model"]]["provider"] for r in todo} - {"stub"}
     clients = providers.make_clients(needed) if needed else {}
     sems = {p: asyncio.Semaphore(n) for p, n in CONCURRENCY.items()}
+    halt = ProviderHalt()
     await asyncio.gather(*[
         run_one(r, models[r["model"]], clients, run_dir, frozen, forbidden,
-                sems[r["provider"]], args.keep_instances, spend)
+                sems[r["provider"]], args.keep_instances, spend, halt)
         for r in todo
     ])
     rows = rebuild_results(run_dir)
@@ -446,6 +495,8 @@ def main() -> None:
     ap.add_argument("--approved-budget", type=float, default=None,
                     help="USD the human approved in chat for this run directory (total, incl. "
                          "spend so far). New runs stop at 80%% of it.")
+    ap.add_argument("--retry-errors", action="store_true",
+                    help="move zero-token error transcripts to aborted/ and rerun those runs")
     ap.add_argument("--limit-per-model", type=int, default=0,
                     help="canary: run only the first N pending runs per model")
     ap.add_argument("--only-models", nargs="*", default=None,
