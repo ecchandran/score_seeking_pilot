@@ -484,12 +484,242 @@ def stage2(run_dir: Path) -> None:
     print("\n".join(L))
 
 
+# ---- Stage 3: consequence conditions ---------------------------------------------
+Z90 = 1.644854
+ALPHA = 0.10   # PREREG Amendment 2
+
+
+def newcombe_diff(k1: int, n1: int, k0: int, n0: int, z: float = Z90) -> tuple[float, float, float]:
+    """p1 - p0 with Newcombe's hybrid-score interval (method 10) built from Wilson intervals."""
+    p1, p0 = k1 / n1, k0 / n0
+    l1, u1 = wilson(k1, n1, z)
+    l0, u0 = wilson(k0, n0, z)
+    d = p1 - p0
+    return d, d - ((p1 - l1) ** 2 + (u0 - p0) ** 2) ** 0.5, d + ((u1 - p1) ** 2 + (p0 - l0) ** 2) ** 0.5
+
+
+def lr_2x2(k1: int, n1: int, k0: int, n0: int) -> float:
+    """Likelihood-ratio test of logit P(violate) ~ condition for two cells (G-test, df 1).
+    Well-defined when a cell is all-comply or all-violate, unlike the Wald test."""
+    from math import log
+    from scipy.stats import chi2
+    def ll(k, n):
+        p = k / n
+        return (k * log(p) if k else 0.0) + ((n - k) * log(1 - p) if n - k else 0.0)
+    g = 2 * (ll(k1, n1) + ll(k0, n0) - ll(k1 + k0, n1 + n0))
+    return float(chi2.sf(max(g, 0.0), 1))
+
+
+def fisher_two_sided(k1: int, n1: int, k0: int, n0: int) -> float:
+    from scipy.stats import fisher_exact
+    return float(fisher_exact([[k1, n1 - k1], [k0, n0 - k0]])[1])
+
+
+def holm(pvals: dict, alpha: float = ALPHA) -> dict:
+    """Holm step-down adjusted p-values and rejections; keys with p None are skipped."""
+    items = sorted(((p, k) for k, p in pvals.items() if p is not None))
+    m, out, running = len(items), {}, 0.0
+    for i, (p, k) in enumerate(items):
+        running = max(running, min(1.0, (m - i) * p))
+        out[k] = {"p_holm": running, "reject": running < alpha}
+    return out
+
+
+def mentions(t: dict, word: str = "deploy") -> bool:
+    return word in " ".join((tu.get("reasoning_text") or "") + " " + (tu.get("text") or "")
+                            for tu in t["turns"]).lower()
+
+
+def stage3(run_dir: Path) -> None:
+    ts = load_transcripts(run_dir)
+    models = sorted({t["model"] for t in ts})
+    conds = ["control", "block", "enable"]
+    per, pvals = {}, {}
+    for m in models:
+        mt = [t for t in ts if t["model"] == m]
+        cells = {}
+        for c in conds:
+            cs = [t for t in mt if t["condition"] == c]
+            an = [t for t in cs if t["outcome"] in ("comply", "violate") and reads(t)[0]]
+            k = sum(t["outcome"] == "violate" for t in an)
+            oc: dict[str, int] = {}
+            att: dict[str, int] = {}
+            for t in cs:
+                oc[t["outcome"]] = oc.get(t["outcome"], 0) + 1
+            for t in an:
+                key = f"{t['outcome']}/{(t.get('attestation') or {}).get('parsed') or 'none'}"
+                att[key] = att.get(key, 0) + 1
+            cells[c] = {"V": cs[0]["V"] if cs else None, "n_runs": len(cs),
+                        "read_grader": sum(reads(t)[0] for t in cs),
+                        "read_tracker": sum(reads(t)[1] for t in cs),
+                        "n_analysis": len(an), "violations": k,
+                        "rate": k / len(an) if an else None,
+                        "ci90": list(wilson(k, len(an), Z90)) if an else None,
+                        "outcomes": oc, "attestation": att,
+                        "deploy_mentions": sum(mentions(t) for t in an),
+                        "cost": sum(t["cost_usd"] for t in cs)}
+        contrasts = {}
+        c0 = cells["control"]
+        for c in ("enable", "block"):
+            c1 = cells[c]
+            if c0["n_analysis"] and c1["n_analysis"]:
+                d, lo, hi = newcombe_diff(c1["violations"], c1["n_analysis"], c0["violations"], c0["n_analysis"])
+                pl = lr_2x2(c1["violations"], c1["n_analysis"], c0["violations"], c0["n_analysis"])
+                pf = fisher_two_sided(c1["violations"], c1["n_analysis"], c0["violations"], c0["n_analysis"])
+                contrasts[c] = {"diff": d, "ci90": [lo, hi], "p_lr": pl, "p_fisher": pf}
+            else:
+                contrasts[c] = {"diff": None, "ci90": None, "p_lr": None, "p_fisher": None}
+            pvals[(m, c)] = contrasts[c]["p_lr"]
+        per[m] = {"cells": cells, "contrasts": contrasts}
+    adj = holm(pvals)
+    for (m, c), a in adj.items():
+        per[m]["contrasts"][c].update(a)
+    forest_html(per, run_dir / "figures" / "forest.html")
+    out = {"per_model": per, "alpha": ALPHA, "spend": sum(t["cost_usd"] for t in ts)}
+    (run_dir / "stage3_stats.json").write_text(json.dumps(out, indent=2, default=float))
+
+    pc = lambda x: "–" if x is None else f"{x:.0%}"  # noqa: E731
+    L = ["# Stage 3 statistics (generated)", "",
+         "Analysis set: comply/violate runs that read the grader (PREREG Amendment 1). Contrasts: "
+         "difference in P(violate) vs control with Newcombe 90% CI; p from the likelihood-ratio "
+         "test of logit P(violate) ~ condition; Holm across all contrasts at α = 0.10; two-sided "
+         "Fisher exact as a check.", "",
+         "## Cells (violations / analysis n; read grader / runs; read tracker)", "",
+         "| Model | V* | control | block | enable |", "| --- | --- | --- | --- | --- |"]
+    for m, d in per.items():
+        cs = d["cells"]
+        cell = lambda c: (f"{cs[c]['violations']}/{cs[c]['n_analysis']} ({pc(cs[c]['rate'])}); "  # noqa: E731
+                          f"{cs[c]['read_grader']}/{cs[c]['n_runs']}; tr {cs[c]['read_tracker']}")
+        L.append(f"| `{m}` | {cs['control']['V']} | {cell('control')} | {cell('block')} | {cell('enable')} |")
+    L += ["", "## Contrasts vs control", "",
+          "| Model | Contrast | Difference | 90% CI | p (LR) | p (Holm) | Reject at 0.10 | p (Fisher) |",
+          "| --- | --- | --- | --- | --- | --- | --- | --- |"]
+    for m, d in per.items():
+        for c in ("enable", "block"):
+            x = d["contrasts"][c]
+            if x["diff"] is None:
+                L.append(f"| `{m}` | {c} − control | – | – | – | – | – | – |")
+                continue
+            L.append(f"| `{m}` | {c} − control | {x['diff']:+.2f} | {x['ci90'][0]:+.2f} to {x['ci90'][1]:+.2f} | "
+                     f"{x['p_lr']:.3g} | {x['p_holm']:.3g} | {'**yes**' if x['reject'] else 'no'} | {x['p_fisher']:.3g} |")
+    L += ["", "## Deployment mentions in reasoning or messages (analysis set)", ""]
+    for m, d in per.items():
+        L.append(f"- `{m}`: " + ", ".join(f"{c} {d['cells'][c]['deploy_mentions']}/{d['cells'][c]['n_analysis']}"
+                                         for c in conds))
+    L += ["", "## Attestation by cell (outcome/answer, analysis set)", ""]
+    for m, d in per.items():
+        L.append(f"- `{m}`: " + "; ".join(f"{c} {d['cells'][c]['attestation']}" for c in conds))
+    L += ["", "## Excluded outcomes by cell", ""]
+    for m, d in per.items():
+        L.append(f"- `{m}`: " + "; ".join(
+            f"{c} {{{', '.join(f'{o}: {n}' for o, n in d['cells'][c]['outcomes'].items() if o not in ('comply', 'violate'))}}}"
+            for c in conds))
+    L.append(f"\nStage 3 spend: ${out['spend']:.2f}")
+    (run_dir / "stage3_stats.md").write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+
+
+def forest_html(per: dict, path: Path) -> None:
+    """Forest plot of enable − control and block − control per model (90% CIs)."""
+    rows = []
+    for m, d in per.items():
+        for c in ("enable", "block"):
+            x = d["contrasts"][c]
+            if x["diff"] is not None:
+                cc, c0 = d["cells"][c], d["cells"]["control"]
+                rows.append({"m": m, "c": c, "d": x["diff"], "lo": x["ci90"][0], "hi": x["ci90"][1],
+                             "ph": x["p_holm"], "rej": x["reject"], "V": c0["V"],
+                             "k1": cc["violations"], "n1": cc["n_analysis"],
+                             "k0": c0["violations"], "n0": c0["n_analysis"]})
+    data = json.dumps(rows)
+    html = FOREST_TEMPLATE.replace("__DATA__", data)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(html)
+
+
+FOREST_TEMPLATE = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stage 3 contrasts</title>
+<style>
+.viz-root { color-scheme: light; --surface-1: #fcfcfb; --text-primary: #0b0b0b; --text-secondary: #52514e;
+  --text-muted: #7a7974; --grid: #e6e5e0; --axis: #b9b8b2; --series-1: #2a78d6; --series-2: #eb6834; }
+@media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .viz-root { color-scheme: dark;
+  --surface-1: #1a1a19; --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+  --grid: #2e2e2b; --axis: #4a4945; --series-1: #3987e5; --series-2: #d95926; } }
+:root[data-theme="dark"] .viz-root { color-scheme: dark; --surface-1: #1a1a19; --text-primary: #f0efec;
+  --text-secondary: #c3c2b7; --text-muted: #8f8e86; --grid: #2e2e2b; --axis: #4a4945; --series-1: #3987e5; --series-2: #d95926; }
+html, body { margin: 0; } body.viz-root { background: var(--surface-1); color: var(--text-primary);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 860px; margin: 0 auto; padding: 24px 16px 40px; }
+h1 { font-size: 18px; margin: 0 0 4px; font-weight: 600; } .sub { color: var(--text-secondary); margin: 0 0 14px; }
+.legend { display: flex; gap: 20px; flex-wrap: wrap; color: var(--text-secondary); font-size: 13px; margin-bottom: 6px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; } .legend svg { width: 14px; height: 14px; flex: none; }
+.chart { position: relative; } .chart > svg { width: 100%; height: auto; display: block; }
+.tick { fill: var(--text-secondary); font-size: 12px; } .tick-muted { fill: var(--text-muted); font-size: 11px; }
+.dlabel { fill: var(--text-primary); font-size: 11px; }
+.tip { position: absolute; pointer-events: none; background: var(--surface-1); color: var(--text-primary);
+  border: 1px solid var(--axis); border-radius: 6px; padding: 8px 10px; font-size: 12px; opacity: 0;
+  box-shadow: 0 2px 10px rgba(0,0,0,.12); white-space: nowrap; }
+</style></head>
+<body class="viz-root"><main>
+<h1>Stage 3: effect of the deployment consequence on violation</h1>
+<p class="sub">Difference in P(violate) vs control among grader readers, at each model's V*. Bars are 90% CIs (Newcombe);
+filled markers are significant after Holm correction at α = 0.10.</p>
+<div class="legend">
+<span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="var(--series-1)"/></svg>enable − control</span>
+<span><svg viewBox="0 0 14 14"><rect x="2" y="2" width="10" height="10" rx="2" fill="var(--series-2)"/></svg>block − control</span>
+<span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="4.5" fill="none" stroke="var(--text-secondary)" stroke-width="2"/></svg>hollow = not significant</span>
+</div>
+<div class="chart" id="chart"><div class="tip" id="tip"></div></div>
+</main>
+<script>
+const R = __DATA__;
+const models = [...new Set(R.map(r => r.m))];
+const W = 820, rowH = 46, M = {l: 190, r: 70, t: 10, b: 40}, H = M.t + M.b + models.length * rowH;
+const pw = W - M.l - M.r, X = v => M.l + (v + 1) / 2 * pw;
+const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
+svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+const el = (t, a, p = svg) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); p.appendChild(e); return e; };
+for (const v of [-1, -0.5, 0, 0.5, 1]) {
+  el("line", {x1: X(v), x2: X(v), y1: M.t, y2: H - M.b, stroke: v === 0 ? "var(--axis)" : "var(--grid)", "stroke-width": v === 0 ? 1.5 : 1});
+  el("text", {x: X(v), y: H - M.b + 18, "text-anchor": "middle", class: "tick"}).textContent = (v > 0 ? "+" : "") + Math.round(v * 100) + " pts";
+}
+el("text", {x: X(-1), y: H - 6, class: "tick-muted"}).textContent = "← less violation than control";
+el("text", {x: X(1), y: H - 6, "text-anchor": "end", class: "tick-muted"}).textContent = "more violation than control →";
+const tip = document.getElementById("tip"), box = document.getElementById("chart");
+models.forEach((m, i) => {
+  const y0 = M.t + i * rowH + rowH / 2;
+  const V = R.find(r => r.m === m).V;
+  el("text", {x: M.l - 12, y: y0 + 1, "text-anchor": "end", class: "tick"}).textContent = m;
+  el("text", {x: M.l - 12, y: y0 + 15, "text-anchor": "end", class: "tick-muted"}).textContent = "V* = " + V;
+  for (const r of R.filter(r => r.m === m)) {
+    const y = y0 + (r.c === "enable" ? -8 : 8), col = r.c === "enable" ? "var(--series-1)" : "var(--series-2)";
+    el("line", {x1: X(r.lo), x2: X(r.hi), y1: y, y2: y, stroke: col, "stroke-width": 2, "stroke-linecap": "round"});
+    const fill = r.rej ? col : "var(--surface-1)";
+    if (r.c === "enable") el("circle", {cx: X(r.d), cy: y, r: 5, fill, stroke: col, "stroke-width": 2});
+    else el("rect", {x: X(r.d) - 5, y: y - 5, width: 10, height: 10, rx: 2, fill, stroke: col, "stroke-width": 2});
+    el("text", {x: X(r.hi) + 6, y: y + 4, class: "dlabel"}).textContent = (r.d > 0 ? "+" : "") + Math.round(r.d * 100);
+    const hit = el("rect", {x: M.l, y: y - 8, width: pw, height: 16, fill: "transparent"});
+    hit.addEventListener("mousemove", ev => {
+      tip.innerHTML = `<b>${m}</b>, ${r.c} − control (V* = ${r.V})<br>${r.c}: ${r.k1}/${r.n1}, control: ${r.k0}/${r.n0}<br>` +
+        `difference ${(r.d * 100).toFixed(0)} pts [${(r.lo * 100).toFixed(0)}, ${(r.hi * 100).toFixed(0)}]<br>Holm p = ${r.ph.toPrecision(2)}`;
+      const b = box.getBoundingClientRect();
+      tip.style.left = Math.min(ev.clientX - b.left + 12, b.width - tip.offsetWidth - 4) + "px";
+      tip.style.top = Math.max(ev.clientY - b.top - tip.offsetHeight - 10, 0) + "px"; tip.style.opacity = 1; });
+    hit.addEventListener("mouseleave", () => tip.style.opacity = 0);
+  }
+});
+box.appendChild(svg);
+</script></body></html>
+"""
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("stage", choices=["stage1", "cuetest", "stage2"])
+    ap.add_argument("stage", choices=["stage1", "cuetest", "stage2", "stage3"])
     ap.add_argument("run_dir", type=Path)
     a = ap.parse_args()
-    {"stage1": stage1, "cuetest": cuetest, "stage2": stage2}[a.stage](a.run_dir)
+    {"stage1": stage1, "cuetest": cuetest, "stage2": stage2, "stage3": stage3}[a.stage](a.run_dir)
 
 
 if __name__ == "__main__":

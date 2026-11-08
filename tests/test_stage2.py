@@ -125,3 +125,16 @@ def test_cells_restricted_to_models():
     rows = run.build_manifest(cfg)
     assert {(r["model"], r["V"]) for r in rows} == {("m1", 1.0), ("m2", 0.05)}
     assert len(rows) == 12
+
+
+def test_stage3_stats_helpers():
+    d, lo, hi = analyze.newcombe_diff(15, 30, 5, 30)
+    assert d == pytest.approx(1 / 3) and lo < d < hi and lo > 0
+    d, lo, hi = analyze.newcombe_diff(0, 10, 10, 10)          # extremes stay in [-1, 1]
+    assert d == -1 and lo >= -1 and hi < 0
+    assert analyze.lr_2x2(10, 10, 0, 10) < 1e-4                 # separated cells: LR still works
+    assert analyze.lr_2x2(5, 10, 5, 10) == pytest.approx(1.0)
+    adj = analyze.holm({"a": 0.01, "b": 0.04, "c": 0.5, "d": None})
+    assert adj["a"]["p_holm"] == pytest.approx(0.03) and adj["a"]["reject"]
+    assert adj["b"]["p_holm"] == pytest.approx(0.08) and adj["b"]["reject"]   # alpha 0.10
+    assert not adj["c"]["reject"] and "d" not in adj
