@@ -716,9 +716,14 @@ box.appendChild(svg);
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("stage", choices=["stage1", "cuetest", "stage2", "stage3"])
+    ap.add_argument("stage", choices=["stage1", "cuetest", "stage2", "stage3", "final"])
+    ap.add_argument("--judge-model", default="deepseek/deepseek-v4-pro")
     ap.add_argument("run_dir", type=Path)
     a = ap.parse_args()
+    if a.stage == "final":
+        from .analyze_stage4 import final
+        final(a.run_dir, a.judge_model)
+        return
     {"stage1": stage1, "cuetest": cuetest, "stage2": stage2, "stage3": stage3}[a.stage](a.run_dir)
 
 

@@ -45,3 +45,11 @@ def test_judge_labels_none_normalization():
 
 def test_hashes_stable():
     assert set(jp.all_hashes()) == {"judge_suspicion", "judge_ack", "monitor_A", "monitor_B"}
+
+
+def test_g_test_homogeneous_and_different():
+    from src.analyze_stage4 import g_test
+    g, df, p = g_test([(5, 5), (5, 5)])
+    assert df == 1 and g < 1e-9 and p > 0.99
+    g, df, p = g_test([(10, 0), (0, 10)])
+    assert p < 0.001
