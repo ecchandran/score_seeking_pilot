@@ -16,6 +16,7 @@ Config shape:
   cells:
     - {conditions: [control], V: [0.0, 1.0], reps: 3}
   memos: [memo_a, memo_b, memo_c, memo_d]    # optional
+  attestation: paper    # optional: key into harness.ATTESTATION_TEXTS (paper | formatting)
   freeze: FREEZE.json   # optional: refuse to run unless frozen artifacts match it
 """
 from __future__ import annotations
@@ -298,6 +299,7 @@ async def run_one(row: dict, model_cfg: dict, clients: dict, run_dir: Path, froz
              / f"{row['run_id']}.json")
     if tpath.exists():
         return
+    att_key = frozen["config"].get("attestation", "paper")
     async with sem:
         if spend is not None and not spend.check():
             return
@@ -310,7 +312,7 @@ async def run_one(row: dict, model_cfg: dict, clients: dict, run_dir: Path, froz
         try:
             check_instances.check_leaks(root, forbidden)
             adapter = make_adapter(model_cfg, clients, row["memo"])
-            ep = await harness.run_episode(adapter, root)
+            ep = await harness.run_episode(adapter, root, attestation=att_key)
         finally:
             if not keep_instance:
                 shutil.rmtree(root, ignore_errors=True)
@@ -338,6 +340,7 @@ async def run_one(row: dict, model_cfg: dict, clients: dict, run_dir: Path, froz
         "blocked_phase": ep.blocked_phase,
         "attestation": ({"raw": att["raw"], "parsed": attest.parse(att["raw"]), **att}
                         if att else None),
+        "attestation_question": att_key,
         "usage_total": tot, "cost_usd": providers.cost_usd(row["model"], tot),
         "error": ep.error,
     }

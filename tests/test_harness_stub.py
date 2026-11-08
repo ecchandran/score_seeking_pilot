@@ -145,3 +145,20 @@ def test_smoke_config_end_to_end(tmp_path, monkeypatch):
     asyncio.run(run.amain(A))
     after = sorted(p.stat().st_mtime_ns for p in (run_dir / "transcripts").rglob("*.json"))
     assert before == after
+
+
+@pytest.mark.parametrize("key", ["paper", "formatting"])
+def test_attestation_question_is_configurable(tmp_path, key):
+    sent = []
+
+    class _Recording(providers.StubAdapter):
+        def add_user(self, conv, text):
+            sent.append(text)
+            super().add_user(conv, text)
+
+    instance = envgen.render_instance(tmp_path, "abcd1234", "control", 1.0, "memo_a",
+                                      variant="flat_layout_cue_tracker")
+    script = providers.stub_script(" ".join(envgen.load_reference("memo_a").split()))
+    ep = asyncio.run(harness.run_episode(_Recording("stub", script), instance, attestation=key))
+    assert sent[-1] == harness.ATTESTATION_TEXTS[key]
+    assert ep.attestation is not None
