@@ -278,6 +278,18 @@ Full report: `results/stage2_dose_v2/GATE_2.md`. In brief: GPT-5.5, o3 and gpt-o
 0% at V=0 to ~90–100% at V=0.1; Sol violates only at V=1.0 (13/29); DeepSeek is flat at
 ~20–40%; Astra never violates. H1 LR = 574.8, df = 10, p ≈ 4e-117.
 
+## Exploratory: violation at V=1 vs capability order (post hoc, not pre-registered)
+
+Chart: `results/exploratory/capability_trend.html`. Capability order supplied by the human (not
+measured): gpt-oss-120b < o3 < DeepSeek V4 Pro < GPT-5.5 < GPT-5.6 Sol < GPT-6 Astra.
+Stage 2 violation among grader readers at V=1: 83%, 100%, 40%, 100%, 45%, 0%.
+- **All six models:** Spearman ρ = −0.55 (p = 0.26) at V=1; ρ = −0.71 (p = 0.11) pooled over V > 0.
+- **OpenAI models only** (o3, GPT-5.5, Sol, Astra): 100%, 100%, 45%, 0%, so ρ = −0.95 (p = 0.05).
+  The trend is monotone within this family and is carried by the two newest models.
+- **DeepSeek breaks the trend.** It violates far less than its capability position predicts.
+- Capability is confounded with release date, provider and safety training (PREREG
+  interpretation rule), so this is descriptive.
+
 ---
 
 ## Cross-iteration observations

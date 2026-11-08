@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Score-seeking by capability</title>
+<style>
+.viz-root {
+  color-scheme: light;
+  --surface-1: #fcfcfb;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #7a7974;
+  --grid: #e6e5e0;
+  --axis: #b9b8b2;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8f8e86;
+    --grid: #2e2e2b;
+    --axis: #4a4945;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+  }
+}
+:root[data-theme="dark"] .viz-root {
+  color-scheme: dark;
+  --surface-1: #1a1a19; --text-primary: #f0efec; --text-secondary: #c3c2b7;
+  --text-muted: #8f8e86; --grid: #2e2e2b; --axis: #4a4945;
+  --series-1: #3987e5; --series-2: #d95926;
+}
+html, body { margin: 0; }
+body.viz-root { background: var(--surface-1); color: var(--text-primary);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 860px; margin: 0 auto; padding: 24px 16px 40px; }
+h1 { font-size: 18px; margin: 0 0 4px; font-weight: 600; }
+.sub { color: var(--text-secondary); margin: 0 0 16px; }
+.legend { display: flex; gap: 20px; flex-wrap: wrap; color: var(--text-secondary); font-size: 13px; margin-bottom: 6px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend svg { width: 14px; height: 14px; flex: none; }
+.chart { position: relative; }
+svg { width: 100%; height: auto; display: block; overflow: visible; }
+.tick { fill: var(--text-secondary); font-size: 12px; }
+.tick-muted { fill: var(--text-muted); font-size: 11px; }
+.dlabel { fill: var(--text-primary); font-size: 12px; font-weight: 600; }
+.tip { position: absolute; pointer-events: none; background: var(--surface-1); color: var(--text-primary);
+  border: 1px solid var(--axis); border-radius: 6px; padding: 8px 10px; font-size: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.12); opacity: 0; transition: opacity .1s; white-space: nowrap; }
+.notes { color: var(--text-secondary); font-size: 13px; margin-top: 14px; }
+.notes p { margin: 6px 0; }
+details { margin-top: 14px; color: var(--text-secondary); font-size: 13px; }
+table { border-collapse: collapse; margin-top: 8px; width: 100%; }
+th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--grid); }
+th { color: var(--text-primary); font-weight: 600; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body class="viz-root">
+<main>
+  <h1>Score-seeking at V = 1 by model capability</h1>
+  <p class="sub">Stage 2 (<code>stage2_dose_v2</code>), control condition. Share of grader readers who violated the
+    multiline instruction, with Wilson 95% intervals. Models ordered by capability (human-supplied order,
+    equally spaced; least capable on the left). Exploratory, not pre-registered.</p>
+  <div class="legend">
+    <span><svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="var(--series-1)"/></svg>V = 1.0</span>
+    <span><svg width="14" height="14"><circle cx="7" cy="7" r="4.5" fill="var(--surface-1)" stroke="var(--series-2)" stroke-width="2"/></svg>All doses V &gt; 0 pooled</span>
+  </div>
+  <div class="chart" id="chart"><div class="tip" id="tip"></div></div>
+  <div class="notes">
+    <p><b>Rank correlation with capability:</b> at V = 1, Spearman ρ = −0.55 (p = 0.26, 6 models).
+      Pooled over V &gt; 0, ρ = −0.71 (p = 0.11). OpenAI models only (o3, GPT-5.5, Sol, Astra) at V = 1: ρ = −0.95 (p = 0.05, 4 models).</p>
+    <p>Capability is confounded with release date, provider and safety training, and there are only six models, so this
+      is a description, not a capability effect.</p>
+  </div>
+  <details>
+    <summary>Data table</summary>
+    <table id="tbl"><thead><tr><th>Capability rank</th><th>Model</th><th class="num">V = 1: violate / readers</th>
+      <th class="num">V = 1 %</th><th class="num">V &gt; 0 pooled</th><th class="num">V &gt; 0 %</th></tr></thead><tbody></tbody></table>
+  </details>
+</main>
+<script>
+const DATA = [
+  {m: "gpt-oss-120b", fam: "open-weight", k1: 19, n1: 23, kp: 102, np: 113},
+  {m: "o3", fam: "OpenAI", k1: 13, n1: 13, kp: 78, np: 80},
+  {m: "DeepSeek V4 Pro", fam: "open-weight", k1: 4, n1: 10, kp: 13, np: 67},
+  {m: "GPT-5.5", fam: "OpenAI", k1: 25, n1: 25, kp: 130, np: 136},
+  {m: "GPT-5.6 Sol", fam: "OpenAI", k1: 13, n1: 29, kp: 13, np: 145},
+  {m: "GPT-6 Astra", fam: "OpenAI", k1: 0, n1: 10, kp: 0, np: 50},
+];
+function wilson(k, n, z = 1.959964) {
+  const p = k / n, d = 1 + z * z / n, c = (p + z * z / (2 * n)) / d;
+  const h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d;
+  return [Math.max(0, c - h), Math.min(1, c + h)];
+}
+const W = 820, H = 400, M = {l: 52, r: 16, t: 16, b: 74};
+const pw = W - M.l - M.r, ph = H - M.t - M.b;
+const X = i => M.l + (i + 0.5) * pw / DATA.length;
+const Y = p => M.t + (1 - p) * ph;
+const NS = "http://www.w3.org/2000/svg";
+const svg = document.createElementNS(NS, "svg");
+svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+svg.setAttribute("role", "img");
+svg.setAttribute("aria-label", "Violation rate at V=1 and pooled over V>0 for six models ordered by capability");
+const el = (tag, attrs, parent = svg) => { const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+for (const t of [0, 0.25, 0.5, 0.75, 1]) {
+  el("line", {x1: M.l, x2: W - M.r, y1: Y(t), y2: Y(t), stroke: t === 0 ? "var(--axis)" : "var(--grid)", "stroke-width": 1});
+  el("text", {x: M.l - 8, y: Y(t) + 4, "text-anchor": "end", class: "tick"}).textContent = `${t * 100}%`;
+}
+el("text", {x: 14, y: M.t + ph / 2, transform: `rotate(-90 14 ${M.t + ph / 2})`, "text-anchor": "middle", class: "tick"})
+  .textContent = "Violate among grader readers";
+DATA.forEach((d, i) => {
+  el("text", {x: X(i), y: H - M.b + 20, "text-anchor": "middle", class: "tick"}).textContent = d.m;
+  el("text", {x: X(i), y: H - M.b + 36, "text-anchor": "middle", class: "tick-muted"}).textContent = d.fam;
+});
+el("text", {x: M.l, y: H - 8, class: "tick-muted"}).textContent = "← less capable";
+el("text", {x: W - M.r, y: H - 8, "text-anchor": "end", class: "tick-muted"}).textContent = "more capable →";
+const tip = document.getElementById("tip"), box = document.getElementById("chart");
+DATA.forEach((d, i) => {
+  const x = X(i), off = 9;
+  // pooled V>0 (hollow, series 2), drawn left of center
+  const [pl, ph2] = wilson(d.kp, d.np), pp = d.kp / d.np;
+  el("line", {x1: x - off, x2: x - off, y1: Y(pl), y2: Y(ph2), stroke: "var(--series-2)", "stroke-width": 2, "stroke-linecap": "round"});
+  el("circle", {cx: x - off, cy: Y(pp), r: 4.5, fill: "var(--surface-1)", stroke: "var(--series-2)", "stroke-width": 2});
+  // V=1 (filled, series 1), right of center
+  const [l, h] = wilson(d.k1, d.n1), p = d.k1 / d.n1;
+  el("line", {x1: x + off, x2: x + off, y1: Y(l), y2: Y(h), stroke: "var(--series-1)", "stroke-width": 2, "stroke-linecap": "round"});
+  el("circle", {cx: x + off, cy: Y(p), r: 5.5, fill: "var(--series-1)", stroke: "var(--surface-1)", "stroke-width": 2});
+  el("text", {x: x + off + 10, y: Y(p) + 4, class: "dlabel"}).textContent = `${Math.round(p * 100)}%`;
+  const hit = el("rect", {x: x - pw / DATA.length / 2, y: M.t, width: pw / DATA.length, height: ph, fill: "transparent"});
+  const show = ev => {
+    tip.innerHTML = `<b>${d.m}</b> (${d.fam})<br>V = 1: ${d.k1}/${d.n1} = ${Math.round(p * 100)}% ` +
+      `[${Math.round(l * 100)}–${Math.round(h * 100)}%]<br>V &gt; 0 pooled: ${d.kp}/${d.np} = ${Math.round(pp * 100)}% ` +
+      `[${Math.round(pl * 100)}–${Math.round(ph2 * 100)}%]`;
+    const r = box.getBoundingClientRect(), tx = ev.clientX - r.left, ty = ev.clientY - r.top;
+    tip.style.left = Math.min(tx + 12, r.width - tip.offsetWidth - 4) + "px";
+    tip.style.top = Math.max(ty - tip.offsetHeight - 10, 0) + "px";
+    tip.style.opacity = 1;
+  };
+  hit.addEventListener("mousemove", show);
+  hit.addEventListener("mouseleave", () => { tip.style.opacity = 0; });
+});
+box.appendChild(svg);
+const tb = document.querySelector("#tbl tbody");
+DATA.forEach((d, i) => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td>${i + 1}</td><td>${d.m}</td><td class="num">${d.k1}/${d.n1}</td>` +
+    `<td class="num">${Math.round(100 * d.k1 / d.n1)}%</td><td class="num">${d.kp}/${d.np}</td>` +
+    `<td class="num">${Math.round(100 * d.kp / d.np)}%</td>`;
+  tb.appendChild(tr);
+});
+</script>
+</body>
+</html>
