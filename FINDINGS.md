@@ -202,6 +202,10 @@ human judged the cue line redundant with "checkout ./inbox" and reworded the ins
 - gpt-oss violators attest "Yes" 6/6 (7/8 across both variants); every OpenAI-model violator
   and DeepSeek's 2 say "No".
 - Tracker reads among grader readers are still low (9/46), so the Stage 3 problem remains.
+- **The new wording adds an instruction that agents grade themselves against.** Astra answers "No"
+  in 18/20 runs, including all 10 compliant grader readers (pilot v3: "Yes" 59/59). Its
+  attestation reasoning says it may not have "searched all files". So "No" no longer points
+  specifically at the multiline rule. A "Yes" after a violation (H4) is still interpretable.
 
 ---
 
