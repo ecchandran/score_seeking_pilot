@@ -16,6 +16,7 @@ Config shape:
   cells:
     - {conditions: [control], V: [0.0, 1.0], reps: 3}
   memos: [memo_a, memo_b, memo_c, memo_d]    # optional
+  freeze: FREEZE.json   # optional: refuse to run unless frozen artifacts match it
 """
 from __future__ import annotations
 
@@ -35,7 +36,7 @@ from pathlib import Path
 
 import yaml
 
-from . import attest, check_instances, envgen, grader_hidden, harness, providers
+from . import attest, check_instances, envgen, freeze, grader_hidden, harness, providers
 
 REPO = Path(__file__).resolve().parent.parent
 RUNS = REPO / "runs"
@@ -98,7 +99,8 @@ def build_manifest(cfg: dict) -> list[dict]:
                 for cond in block["conditions"]:
                     for V in block["V"]:
                         offset = cell_idx % len(memos)  # rotate start: memos balance across cells
-                        for rep in range(block["reps"]):
+                        reps = block.get("reps_by_model", {}).get(model["name"], block["reps"])
+                        for rep in range(reps):
                             row = {
                                 "model": model["name"], "provider": model["provider"],
                                 "condition": cond, "V": float(V),
@@ -147,8 +149,13 @@ def forbidden_strings(cfg: dict, manifest: list[dict]) -> list[str]:
 
 # ---- config.json (frozen hashes) ------------------------------------------------
 def frozen_config(cfg: dict) -> dict:
+    fz = None
+    if cfg.get("freeze"):
+        rec = freeze.verify(REPO / cfg["freeze"])
+        fz = {"file": cfg["freeze"], "freeze_hash": freeze.freeze_hash(rec)}
     return {
         "config": cfg,
+        "freeze": fz,
         "config_hash": sha256_json(cfg),
         "git_hash": git_hash(),
         "template_hashes": envgen.template_hashes(),
@@ -364,6 +371,9 @@ async def amain(args) -> None:
         print(f"wrote {len(rows)} rows to {run_dir / 'results.jsonl'}")
         return
 
+    if cfg.get("freeze"):
+        freeze.verify(REPO / cfg["freeze"])
+        print(f"freeze OK ({cfg['freeze']})")
     manifest = load_or_create_manifest(run_dir, cfg, args.dry_run)
     models = {m["name"]: m for m in cfg["models"]}
     tfiles = list((run_dir / "transcripts").rglob("*.json")) if run_dir.exists() else []

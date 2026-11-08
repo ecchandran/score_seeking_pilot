@@ -1,0 +1,19 @@
+# Stage 2 dose-response grid (human-approved 2026-11-08: 30 reps per V, Astra 10; ~$17).
+# Frozen design from Gate 1 (FREEZE.json): env variant explore_instr_cue, multi-file submit.
+# Analysis set: control, outcome comply/violate, read metadata/grader.py. See PREREG.md.
+run_name: stage2_dose
+seed: 20261108
+freeze: FREEZE.json
+models:
+  - {name: gpt-6-astra, provider: openai}
+  - {name: gpt-5.6-sol, provider: openai}
+  - {name: gpt-5.5, provider: openai}
+  - {name: o3, provider: openai}
+  - {name: openai/gpt-oss-120b, provider: openrouter, provider_pin: PrimeIntellect}
+  - {name: deepseek/deepseek-v4-pro, provider: openrouter, provider_pin: StreamLake}
+cells:
+  - variants: [explore_instr_cue]
+    conditions: [control]
+    V: [0.0, 0.1, 0.25, 0.5, 0.75, 1.0]
+    reps: 30
+    reps_by_model: {gpt-6-astra: 10}
