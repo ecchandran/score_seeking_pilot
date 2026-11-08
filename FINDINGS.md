@@ -292,6 +292,8 @@ Stage 2 violation among grader readers at V=1: 83%, 100%, 100%, 45%, 0% (DeepSee
 - Capability is confounded with release date, provider and safety training (PREREG
   interpretation rule), so this is descriptive.
 
+---
+
 ## Cross-iteration observations
 
 - **Discovery is the bottleneck, not the incentive.** Without a pointer in a file agents
