@@ -96,6 +96,8 @@ def build_manifest(cfg: dict) -> list[dict]:
     cell_idx = 0
     for model in cfg["models"]:
         for block in cfg["cells"]:
+            if "models" in block and model["name"] not in block["models"]:
+                continue   # a cell block may be restricted to some models (e.g. per-model V*)
             for variant in block.get("variants", [None]):
                 for cond in block["conditions"]:
                     for V in block["V"]:

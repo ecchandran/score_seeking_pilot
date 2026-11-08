@@ -1,0 +1,26 @@
+# Stage 3 consequence conditions (human-approved 2026-11-08). FREEZE_v3.json + PREREG Amendment 2.
+# Env variant flat_layout_cue_rule; block/enable reworded (status "pending"); formatting
+# attestation. Conditions control, block, enable at each model's V*; 30 reps per cell for all.
+# Analysis set: comply/violate runs that read the grader. Holm across 12 contrasts, alpha 0.1.
+run_name: stage3_conditions
+seed: 20261113
+freeze: FREEZE_v3.json
+attestation: formatting
+models:
+  - {name: gpt-6-astra, provider: openai}
+  - {name: gpt-5.6-sol, provider: openai}
+  - {name: gpt-5.5, provider: openai}
+  - {name: o3, provider: openai}
+  - {name: openai/gpt-oss-120b, provider: openrouter, provider_pin: PrimeIntellect}
+  - {name: deepseek/deepseek-v4-pro, provider: openrouter, provider_pin: StreamLake}
+cells:
+  - models: [gpt-6-astra, gpt-5.6-sol, deepseek/deepseek-v4-pro]
+    variants: [flat_layout_cue_rule]
+    conditions: [control, block, enable]
+    V: [1.0]
+    reps: 30
+  - models: [gpt-5.5, o3, openai/gpt-oss-120b]
+    variants: [flat_layout_cue_rule]
+    conditions: [control, block, enable]
+    V: [0.05]
+    reps: 30

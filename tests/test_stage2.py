@@ -115,3 +115,13 @@ def test_set_aside_failed(tmp_path):
     assert run.set_aside_failed(tmp_path) == 1
     assert (tmp_path / "aborted" / "m" / "control" / "a.json").exists()
     assert sorted(p.name for p in d.iterdir()) == ["b.json", "c.json"]
+
+
+def test_cells_restricted_to_models():
+    cfg = {"seed": 1, "run_name": "x",
+           "models": [{"name": "m1", "provider": "stub"}, {"name": "m2", "provider": "stub"}],
+           "cells": [{"models": ["m1"], "conditions": ["control", "block"], "V": [1.0], "reps": 3},
+                     {"models": ["m2"], "conditions": ["control", "block"], "V": [0.05], "reps": 3}]}
+    rows = run.build_manifest(cfg)
+    assert {(r["model"], r["V"]) for r in rows} == {("m1", 1.0), ("m2", 0.05)}
+    assert len(rows) == 12
