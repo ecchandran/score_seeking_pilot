@@ -8,6 +8,20 @@ Stage 0 is complete and waiting for Gate 0 approval. See `runs/stage0_access/GAT
 Python 3.15.2 in `.venv`; exact versions in `requirements.lock`. PyYAML has no 3.15 wheel,
 so pip builds it from source; the Command Line Tools must be installed for that.
 
+## Raw data and backups (2026-11-08)
+
+- **Raw transcripts** (every run, including aborted ones) live in `runs/`, which is
+  git-ignored per the spec. A snapshot is at `archive/raw_runs_2026-11-08.tar.gz`: 20 MB, 2,111
+  JSON files, verified with `shasum -a 256 -c` against the `.sha256` file next to it.
+  `archive/` is git-ignored too, and this repository has no remote, so **both copies are on
+  this Mac only**. Copy the archive off the machine.
+- A scan for API keys found none. Three regex hits were inside OpenAI's `encrypted_content`
+  blobs, and no file contains either key from `.env`.
+- **Committed, report-ready data:** `results/<run>/` holds `results.jsonl` (one row per run,
+  including `read_grader`, `read_tracker`, `outcome`, `score`, `attest`), `manifest.jsonl`,
+  `config.json`, stats and gate reports. Stage 2 figures are in `results/stage2_dose_v2/figures/`
+  (`dose_response.svg`, `capability_trend.html`).
+
 ## Re-freeze and Stage 2 v2 (human, 2026-11-08)
 
 - After iterations 6–8 (cue tests 3–5, $7.83), the human approved freezing iteration 8:
