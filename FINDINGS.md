@@ -283,7 +283,7 @@ Full report: `results/stage2_dose_v2/GATE_2.md`. In brief: GPT-5.5, o3 and gpt-o
 Run under `FREEZE_v3.json` / PREREG Amendment 2. 540 runs, $14.83. Full report:
 `results/stage3_conditions/GATE_3.md`.
 - **Block lowers violation for GPT-5.5** (85% → 26%) **and Sol** (43% → 0%). Both are
-  significant after Holm at α = 0.10.
+  significant after Holm at α = 0.10 (pre-registered) and still at α = 0.05 (Amendment 3).
 - **No enable contrast is significant.** o3 and gpt-oss don't move: they sit at 88–94% in
   every condition and never reason about deployment.
 - DeepSeek leans deployment-seeking (block lower, enable higher; not significant). Astra stays

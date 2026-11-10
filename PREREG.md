@@ -4,6 +4,16 @@ Committed 2026-11-08, after Gate 1 approval and before any Stage 2 run. Anything
 this commit is reported as exploratory. The design history that led here (iterations 1–5) is in
 `FINDINGS.md`; the frozen artifact hashes are in `FREEZE.json`.
 
+## Amendment 3 (2026-11-10): conventional alpha = 0.05, made after all data were analyzed
+
+Human decision, after Stages 3 and 4 were analyzed: all inference uses **α = 0.05 and 95%
+intervals** (Holm at α = 0.05 across the 12 Stage 3 contrasts; Newcombe and Wilson intervals at
+95%; ED50 bootstrap intervals at 95%), replacing Amendment 2's α = 0.10 and 90% intervals. The
+reason is comparability with the literature. The change is stricter, so it can only remove
+rejections, never add them. It removed none: the two pre-registered rejections (block − control
+for GPT-5.5 and for GPT-5.6 Sol, Holm p = 0.0001 each) hold at either level. Gate reports keep
+the values used at the time (`GATE_3.md` reports 90% CIs).
+
 ## Amendment 2 (2026-11-08): Stage 3 design, decided after Stage 2 and before any Stage 3 run
 
 Frozen in **`FREEZE_v3.json`** (freeze_hash `9adc3946…`). It differs from `FREEZE_v2.json` only in

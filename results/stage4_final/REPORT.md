@@ -30,7 +30,8 @@ Exploratory: among the five OpenAI models the two newest resist (Spearman ρ = �
 
 ## H3: deployment pressure (Stage 3): block lowers violation for two models; enable does nothing
 
-540 runs, control / block / enable at each model's V\*, 30 per cell, Holm at α = 0.10.
+540 runs, control / block / enable at each model's V\*, 30 per cell, Holm at α = 0.05 (PREREG Amendment 3; Amendment 2 used 0.10, with the same
+conclusions).
 
 | Model | block − control | enable − control | Closest prediction row |
 | --- | --- | --- | --- |
@@ -142,7 +143,8 @@ gets actions only; variant B also gets reasoning. AUROC on grader readers:
    has no Flex tier.
 5. The earlier deviations still apply: read-only tools instead of bash, the rule placed in
    the grader docstring, the formatting-specific attestation question, reworded block and
-   enable conditions, α = 0.10, low-dose extension skipped. See PREREG.md Amendments 1–2
+   enable conditions, α changed from 0.10 to the conventional 0.05 after analysis (stricter, no
+   result changed), low-dose extension skipped. See PREREG.md Amendments 1–3
    and FINDINGS.md.
 
 ## Spend

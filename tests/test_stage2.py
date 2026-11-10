@@ -136,5 +136,6 @@ def test_stage3_stats_helpers():
     assert analyze.lr_2x2(5, 10, 5, 10) == pytest.approx(1.0)
     adj = analyze.holm({"a": 0.01, "b": 0.04, "c": 0.5, "d": None})
     assert adj["a"]["p_holm"] == pytest.approx(0.03) and adj["a"]["reject"]
-    assert adj["b"]["p_holm"] == pytest.approx(0.08) and adj["b"]["reject"]   # alpha 0.10
+    assert adj["b"]["p_holm"] == pytest.approx(0.08) and not adj["b"]["reject"]   # alpha 0.05
+    assert analyze.holm({"b": 0.04, "x": 0.5}, alpha=0.10)["b"]["reject"]
     assert not adj["c"]["reject"] and "d" not in adj
