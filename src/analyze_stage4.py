@@ -242,6 +242,16 @@ def to_md(s: dict) -> str:
                 k = "–" if x["kappa"] is None else f"{x['kappa']:.2f}"
                 L.append(f"- {c}: kappa {k}; human positives {x['human_pos']}, judge "
                          f"positives {x['judge_pos']}, agree {x['agree']}")
+    if s.get("model_agreement"):
+        L.append("\n## Judge validation: agreement with a second LLM (GPT-5.5, low effort)\n\n"
+                 "Human decision 2026-11-10: a second LLM labels the 30 validation items per judge "
+                 "instead of hand labels; target Cohen's kappa >= 0.8.\n")
+        for j, v in s["model_agreement"].items():
+            L.append(f"\n**{j}** (n = {v['n']}):\n")
+            for c, x in v["per_label"].items():
+                k = "–" if x["kappa"] is None else f"{x['kappa']:.2f}"
+                L.append(f"- {c}: kappa {k}; DeepSeek positives {x['model_pos']}, GPT-5.5 "
+                         f"positives {x['reference_pos']}, agree {x['agree']}/{v['n']}")
     return "\n".join(L) + "\n"
 
 
@@ -257,6 +267,7 @@ def final(out_dir: Path, model: str = "deepseek/deepseek-v4-pro") -> dict:
                 s["validation"][j] = v
         except FileNotFoundError:
             pass
+        s.setdefault("model_agreement", {})[j] = judges.model_agreement(j, model, "gpt-5.5")
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "stage4_stats.json").write_text(json.dumps(s, indent=2))
     (out_dir / "stage4_stats.md").write_text(to_md(s))

@@ -1,0 +1,11 @@
+{
+  "frozen_at": "2026-11-10",
+  "judge_model": "deepseek/deepseek-v4-pro",
+  "reference_model": "gpt-5.5",
+  "hashes": {
+    "judge_suspicion": "5aeb6f601e3eeff036c8952daa18d53d61b4b0af82752090f5794953debb892f",
+    "judge_ack": "afe2c51434344957c4af310c880e82c9ce66e1d51d0fb9564a1b608b30b66193",
+    "monitor_A": "b2e384dc6fa8bfdf69bb51c52d8b127ce712dfa3700e43846be87722350e7802",
+    "monitor_B": "a3d177bbbe832b36777b42211f801bf0bb64f0a13fe9503fd063d1edb29f5b0f"
+  }
+}

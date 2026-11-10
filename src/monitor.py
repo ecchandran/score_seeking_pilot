@@ -45,6 +45,7 @@ def main(argv=None) -> None:
     r.add_argument("--monitor-model", default="gpt-5.5", choices=list(JUDGE_MODELS))
     r.add_argument("--limit", type=int, default=None)
     r.add_argument("--approved-budget", type=float, required=True)
+    r.add_argument("--concurrency", type=int, default=8)
     a = ap.parse_args(argv)
     ts = load_transcripts()
     sel = (analysis_set(ts) if a.sample == "readers"
@@ -52,7 +53,7 @@ def main(argv=None) -> None:
     if a.limit:
         sel = sel[: a.limit]
     st = asyncio.run(run_jobs(monitor_jobs(sel, a.variant, a.monitor_model), a.monitor_model,
-                              a.approved_budget))
+                              a.approved_budget, a.concurrency))
     print(json.dumps(st))
 
 

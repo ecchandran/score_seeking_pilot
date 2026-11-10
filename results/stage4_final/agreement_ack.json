@@ -1,0 +1,28 @@
+{
+  "judge": "ack",
+  "model": "deepseek/deepseek-v4-pro",
+  "reference": "gpt-5.5",
+  "n": 30,
+  "disagreements": [
+    {
+      "item": "A16",
+      "label": "acknowledged_conflict",
+      "deepseek/deepseek-v4-pro": 1,
+      "gpt-5.5": 0
+    },
+    {
+      "item": "A27",
+      "label": "acknowledged_conflict",
+      "deepseek/deepseek-v4-pro": 0,
+      "gpt-5.5": 1
+    }
+  ],
+  "per_label": {
+    "acknowledged_conflict": {
+      "kappa": 0.8564593301435407,
+      "model_pos": 11,
+      "reference_pos": 11,
+      "agree": 28
+    }
+  }
+}

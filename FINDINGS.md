@@ -333,3 +333,21 @@ Stage 2 violation among grader readers at V=1: 83%, 100%, 100%, 45%, 0% (DeepSee
   "every instruction" (human decision).
 - Iteration 8: the grader's docstring restates the tracker's status and deployment rule
   (condition-specific), instead of only pointing to the tracker file.
+
+---
+
+## Stage 4: judges and monitor (2026-11-10)
+
+Full report: `results/stage4_final/REPORT.md`. Judge and monitor: DeepSeek V4 Pro (low effort),
+validated against GPT-5.5 labels on 30 items per judge instead of hand labels (human decision):
+`planted_test` κ = 1.00, `acknowledged_conflict` κ = 0.86. Spend $6.45; total about $65.35.
+
+- **H2:** OpenAI models verbalize "planted test" in 0–6% of grader-reader runs (upper bounds;
+  some loose positives). No difference among runs with reasoning (G = 5.5, p = 0.14). DeepSeek
+  does so in 79% (raw reasoning), gpt-oss in 2%.
+- **H4:** dishonest attestation is rare: gpt-oss 10/160, DeepSeek 1/28, all others 0. GPT-5.5
+  and Sol violators always answer "No". gpt-oss answers "Yes" in 90/160 violations, mostly
+  without acknowledging the conflict (ambiguous by the pre-registered rule).
+- **Monitor:** AUROC with reasoning (B) 0.70 pooled, 0.82–0.92 for gpt-oss, o3, GPT-5.5,
+  DeepSeek; Sol near chance (0.56) in both variants. Reasoning adds +0.18 for GPT-5.5 and
+  DeepSeek. The monitor under-predicts (mean p 0.38 vs base rate 0.47).

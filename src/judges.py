@@ -352,6 +352,34 @@ def kappa_report(judge: str, model: str) -> dict:
     return out
 
 
+def model_agreement(judge: str, model_a: str, model_b: str) -> dict:
+    """Kappa between two judge models on the validation items (reference labeler = model_b).
+    Human decision 2026-11-10: a second LLM replaces the human hand labels; target kappa >= 0.8."""
+    key = json.loads((LABELS / f"{judge}_key.json").read_text())
+    cols = jp.SUSPICION_FLAGS if judge == "suspicion" else ["acknowledged_conflict"]
+    pairs = {c: ([], []) for c in cols}
+    disagreements = []
+    for k in key:
+        labs = []
+        for m in (model_a, model_b):
+            pth = RUNS / k["run"] / "judges" / f"{judge}__{kind_label(m)}" / f"{k['run_id']}.json"
+            labs.append(judge_labels(json.loads(pth.read_text()), judge) if pth.exists() else None)
+        if None in labs:
+            continue
+        for c in cols:
+            pairs[c][0].append(labs[0][c])
+            pairs[c][1].append(labs[1][c])
+            if labs[0][c] != labs[1][c]:
+                disagreements.append({"item": k["item"], "label": c, model_a: labs[0][c],
+                                      model_b: labs[1][c]})
+    return {"judge": judge, "model": model_a, "reference": model_b,
+            "n": len(pairs[cols[0]][0]), "disagreements": disagreements,
+            "per_label": {c: {"kappa": cohen_kappa(a, b), "model_pos": sum(a),
+                              "reference_pos": sum(b),
+                              "agree": sum(x == y for x, y in zip(a, b))}
+                          for c, (a, b) in pairs.items()}}
+
+
 # ---- CLI ---------------------------------------------------------------------------------
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser()
@@ -366,9 +394,14 @@ def main(argv=None) -> None:
     r.add_argument("--sample", choices=["validation", "all", "violators"], required=True)
     r.add_argument("--judge-model", default="gpt-5.5", choices=list(JUDGE_MODELS))
     r.add_argument("--approved-budget", type=float, required=True)
+    r.add_argument("--concurrency", type=int, default=8)
     k = sub.add_parser("kappa")
     k.add_argument("--judge", required=True, choices=list(jp.JUDGES))
     k.add_argument("--judge-model", default="gpt-5.5", choices=list(JUDGE_MODELS))
+    g = sub.add_parser("agree")
+    g.add_argument("--judge", required=True, choices=list(jp.JUDGES))
+    g.add_argument("--judge-model", default="deepseek/deepseek-v4-pro", choices=list(JUDGE_MODELS))
+    g.add_argument("--reference-model", default="gpt-5.5", choices=list(JUDGE_MODELS))
     a = ap.parse_args(argv)
 
     if a.cmd == "estimate":
@@ -390,8 +423,10 @@ def main(argv=None) -> None:
         else:
             sel = analysis_set(ts)
         st = asyncio.run(run_jobs(judge_jobs(sel, a.judge, a.judge_model), a.judge_model,
-                                  a.approved_budget))
+                                  a.approved_budget, a.concurrency))
         print(json.dumps(st))
+    elif a.cmd == "agree":
+        print(json.dumps(model_agreement(a.judge, a.judge_model, a.reference_model), indent=2))
     elif a.cmd == "kappa":
         print(json.dumps(kappa_report(a.judge, a.judge_model), indent=2))
 

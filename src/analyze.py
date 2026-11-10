@@ -308,7 +308,8 @@ def ed50(a: float, b: float) -> float:
     return -a / b if b > 0 else float("inf")
 
 
-def bootstrap_ed50(V, y, n_boot: int = N_BOOT, seed: int = BOOT_SEED) -> dict:
+def bootstrap_ed50(V, y, n_boot: int = N_BOOT, seed: int = BOOT_SEED,
+                   level: float = 0.95) -> dict:
     """Resample runs with replacement within each V (design fixed); refit with the same rule."""
     V, y = np.asarray(V, float), np.asarray(y, float)
     rng = np.random.default_rng(seed)
@@ -319,7 +320,8 @@ def bootstrap_ed50(V, y, n_boot: int = N_BOOT, seed: int = BOOT_SEED) -> dict:
         eds[i] = fit_model(V[idx], y[idx])["ed50"]
     finite = np.isfinite(eds)
     srt = np.sort(eds)   # +inf (no positive slope) sorts last; order statistics stay valid
-    lo, hi = srt[int(np.floor(0.025 * n_boot))], srt[int(np.ceil(0.975 * n_boot)) - 1]
+    tail = (1 - level) / 2
+    lo, hi = srt[int(np.floor(tail * n_boot))], srt[int(np.ceil((1 - tail) * n_boot)) - 1]
     return {"ci": [float(lo), float(hi)], "share_no_positive_slope": float(1 - finite.mean()),
             "n_boot": n_boot}
 
