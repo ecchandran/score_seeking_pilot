@@ -211,7 +211,7 @@ def table_stage4_judges(s4: dict) -> str:
         rows.append(" & ".join([
             name, str(nv), kn(h4["violators_yes"], nv),
             kn(h4["ack_among_violators"][0], h4["ack_among_violators"][1]),
-            (f"\\textbf{{{kn(h4['dishonest'], h4['violators_judged'])}}}"
+            (kn(h4['dishonest'], h4['violators_judged'])
              if h4["violators_judged"] else "--"),
             kn(h4["table"].get("comply|no", 0), ncomp), reasoning_present,
             among_reasoning(h2, "planted_test"),
