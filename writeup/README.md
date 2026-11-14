@@ -2,7 +2,7 @@
 
 - `main.tex`: the document. Replace the grey `\todo{...}` placeholders with your text.
 - `generated/`: plot data and table rows, built from the committed stats files. Do not edit;
-  regenerate with `.venv/bin/python writeup/make_figures.py` (from `stage1/`).
+  regenerate with `.venv/bin/python writeup/make_figures.py` (from the repository root).
 
 ## Compile (works offline)
 

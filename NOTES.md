@@ -127,7 +127,6 @@ The pilot is done: 132 runs, $2.20. It's waiting for Gate 1 decisions; see `runs
 
 - **OpenRouter attestation call sends no `tools`** (see probe findings).
 - **OpenRouter pins:** PrimeIntellect (gpt-oss-120b) and StreamLake (DeepSeek V4 Pro).
-- **Repo location.** The code lives in `exercise_nov_7/stage1/`, not `score-seeking-pilot/`.
 - **Valence-control condition files** (`control_approved.json`, `control_blocked.json`) are
   written now, so they are frozen with everything else at Gate 1. They are used only if
   approved at Gate 2.
