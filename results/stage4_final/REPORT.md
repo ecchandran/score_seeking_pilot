@@ -1,4 +1,9 @@
-# Score-seeking pilot: final report (Stages 2–4, 2026-11-10)
+# Score-seeking pilot: final report (Stages 2–4, 2026-11-10; updated 2026-11-15)
+
+*2026-11-15 update:* the monitor section now leads with runs where V > 0, with bootstrap
+CIs, and the H3 section notes the exploratory block − enable contrast used in the write-up.
+Both changes are post hoc (PREREG.md Amendment 4), and deviation 6 records them. Every other
+section is unchanged.
 
 A small replication and extension of Redwood Research's score-seeking paper
 (arXiv 2610.41014). An agent translates emails; a visible `grader.py` awards a score V only
@@ -42,6 +47,12 @@ conclusions).
 | GPT-6 Astra | 0% everywhere | 0% everywhere | strong instruction-following |
 
 No model violated more when violating would *enable* deployment.
+
+**Exploratory (2026-11-15, PREREG Amendment 4): block − enable.** Block and enable differ only in
+"approved" vs "blocked", so the write-up headlines block − enable and control − enable (Holm
+across those 12 contrasts, α = 0.05). Block − enable is significant for GPT-5.6 Sol (−21 pts
+[−38, −4], Holm p = 0.03) and GPT-5.5 (−46 pts [−65, −20], Holm p = 0.005), and for no other model.
+Source: `writeup/generated/stage3_vs_enable.json`.
 
 ## H2: verbalized suspicion that the setup is a planted test: no reliable OpenAI difference
 
@@ -96,25 +107,47 @@ Dishonest = violated **and** answered Yes **and** the reasoning acknowledged the
 ## Secondary: a monitor reading the transcript before submission
 
 The monitor sees each transcript cut before the response that submits the memo. Variant A
-gets actions only; variant B also gets reasoning. AUROC on grader readers:
+gets actions only; variant B also gets reasoning.
+
+**Grader readers with V > 0 (updated 2026-11-15; post hoc, PREREG Amendment 4).** No run
+violated at V = 0 and the monitor can read V in `grader.py`, so V = 0 runs are trivially easy
+negatives. Excluding them leaves 1,007 of 1,124 grader readers. 95% CIs: paired percentile
+bootstrap over runs, 2,000 resamples.
+
+| Model | n | base rate | AUROC A [95% CI] | AUROC B [95% CI] | B − A [95% CI] |
+| --- | --- | --- | --- | --- | --- |
+| gpt-oss-120b | 176 | 91% | 0.58 [0.42, 0.73] | 0.63 [0.50, 0.76] | +0.05 [−0.14, +0.25] |
+| o3 | 128 | 96% | 0.61 [0.38, 0.84] | 0.81 [0.63, 0.95] | +0.20 [−0.13, +0.44] |
+| GPT-5.5 | 219 | 83% | 0.48 [0.37, 0.57] | **0.74** [0.66, 0.82] | **+0.26** [+0.13, +0.41] |
+| GPT-5.6 Sol | 232 | 14% | 0.57 [0.45, 0.68] | 0.52 [0.43, 0.61] | −0.06 [−0.17, +0.06] |
+| DeepSeek V4 Pro | 112 | 25% | 0.60 [0.48, 0.72] | **0.80** [0.70, 0.90] | **+0.20** [+0.06, +0.35] |
+| **Pooled** | 1,007 | 52% | 0.47 [0.44, 0.51] | **0.64** [0.61, 0.67] | **+0.16** [+0.12, +0.21] |
+
+GPT-6 Astra (140 runs) never violates, so its AUROC is undefined.
+
+- **Without reasoning the monitor is near chance for every model** (AUROC 0.48–0.61).
+- **Reasoning helps clearly for GPT-5.5 and DeepSeek**, the only two models whose B − A
+  interval lies above zero, and pooled. o3's gain is large but imprecise: it has only 5
+  compliers, and 9 of the 2,000 resamples contained none and were skipped.
+- **Sol is near chance in both variants.** That is consistent with Stage 3: Sol's behavior
+  changes with the deployment rule, but its summaries rarely say why.
+- **The monitor under-predicts.** Mean p = 0.32 (A) and 0.42 (B) against a 52% base rate.
+  Recall at 0.5 is 27% (A) and 49% (B).
+- The pooled AUROC is lower than most per-model values because the monitor's scale is not
+  comparable across models.
+
+**All grader readers (the original 2026-11-10 analysis, including V = 0):**
 
 | Model | base rate | AUROC A | AUROC B |
 | --- | --- | --- | --- |
 | gpt-oss-120b | 82% | 0.79 | 0.82 |
 | o3 | 84% | 0.89 | 0.92 |
-| GPT-5.5 | 74% | 0.65 | **0.84** |
+| GPT-5.5 | 74% | 0.65 | 0.84 |
 | GPT-5.6 Sol | 12% | 0.61 | 0.56 |
-| DeepSeek V4 Pro | 22% | 0.66 | **0.83** |
-| **Pooled** | 47% | 0.56 | **0.70** |
+| DeepSeek V4 Pro | 22% | 0.66 | 0.83 |
+| **Pooled** | 47% | 0.56 | 0.70 |
 
-- **Reasoning helps** for GPT-5.5 (+0.18) and DeepSeek (+0.18), and pooled (0.56 → 0.70).
-- **Sol is near chance in both variants.** That is consistent with Stage 3: Sol's behavior
-  changes with the deployment rule, but its summaries rarely say why.
-- **The monitor under-predicts.** Mean p = 0.29 (A) and 0.38 (B) against a 47% base rate.
-  Recall at 0.5 is 27% (A) and 49% (B). Precision at 0.5 is high for the high-base-rate
-  models (84–100%).
-- The pooled AUROC is lower than most per-model values because the monitor's scale is not
-  comparable across models.
+These per-model values are inflated by the V = 0 runs, where every run complied.
 
 ## Judge validation
 
@@ -146,6 +179,9 @@ gets actions only; variant B also gets reasoning. AUROC on grader readers:
    enable conditions, α changed from 0.10 to the conventional 0.05 after analysis (stricter, no
    result changed), low-dose extension skipped. See PREREG.md Amendments 1–3
    and FINDINGS.md.
+6. **Post hoc (2026-11-15, PREREG Amendment 4):** the write-up headlines the block − enable
+   contrast; the monitor analysis is restricted to V > 0 with bootstrap CIs; and a calibration
+   binning bug was fixed (it affected only the calibration plots).
 
 ## Spend
 

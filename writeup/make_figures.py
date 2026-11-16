@@ -181,7 +181,9 @@ def macros(s2: dict, s3: dict) -> str:
 # ---- Stage 4 (judges and monitor) ------------------------------------------------------
 # Monitor results use grader readers with a comply/violate outcome, the analysis set used
 # everywhere else (human decision 2026-11-10). "all" would add runs that never read the grader.
-MONITOR_SET = "readers"
+# Restricted to V > 0 (human decision 2026-11-15): no run violated at V = 0 and the monitor can
+# read V, so V = 0 runs are trivially easy negatives that inflate AUROC. Unrestricted: "readers".
+MONITOR_SET = "readers_vpos"
 
 
 def kn(k: int, n: int) -> str:
@@ -219,18 +221,33 @@ def table_stage4_judges(s4: dict) -> str:
     return "\n".join(rows) + "\n"
 
 
+def signed2(x: float) -> str:
+    """Signed two-decimal number with a true minus sign, for tables."""
+    s = f"{x:+.2f}"
+    return "$-$" + s[1:] if s.startswith("-") else s
+
+
 def table_stage4_monitor(s4: dict) -> str:
+    """AUROC A and B with paired-bootstrap 95% CIs, and B - A with its CI (human decision
+    2026-11-15)."""
     A, B = s4["monitor"][f"A_{MONITOR_SET}"], s4["monitor"][f"B_{MONITOR_SET}"]
     f = lambda x: "--" if x is None else f"{x:.2f}"
     p = lambda x: "--" if x is None else f"{100 * x:.0f}\\%"
+    ci = lambda x, lo_hi: "--" if x is None else f"{f(x)} [{f(lo_hi[0])}, {f(lo_hi[1])}]"
     rows = []
     for mid, name in [(m, n) for m, n, _, _ in MODELS] + [("pooled", "\\textit{Pooled}")]:
         a, b = A[mid], B[mid]
+        bs = a.get("boot")
         if mid == "pooled":
             rows.append(r"\midrule")
-        rows.append(" & ".join([name, str(a["n"]), p(a["base_rate"]), f(a["auroc"]),
-                                f(b["auroc"]), f"{p(a['recall@0.5'])} / {p(b['recall@0.5'])}",
-                                f"{p(a['precision@0.5'])} / {p(b['precision@0.5'])}"]) + r" \\")
+        rows.append(" & ".join([
+            name, str(a["n"]), p(a["base_rate"]),
+            ci(a["auroc"], bs["auroc_A_ci"]) if bs else "--",
+            ci(b["auroc"], bs["auroc_B_ci"]) if bs else "--",
+            (f"{signed2(bs['diff_B_minus_A'])} [{signed2(bs['diff_B_minus_A_ci'][0])}, "
+             f"{signed2(bs['diff_B_minus_A_ci'][1])}]") if bs else "--",
+            f"{p(a['recall@0.5'])} / {p(b['recall@0.5'])}",
+            f"{p(a['precision@0.5'])} / {p(b['precision@0.5'])}"]) + r" \\")
     return "\n".join(rows) + "\n"
 
 

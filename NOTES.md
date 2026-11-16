@@ -1,5 +1,10 @@
 # NOTES
 
+> **Lab notebook.** These are working notes, written during the study (2026-11-07 to 11-10)
+> and kept as written. Status lines, pending decisions and references to the local machine
+> (`.venv`, `runs/`, `archive/` and backups, none of which are in this repository) are out of
+> date. For results, see `README.md`, `writeup/main.pdf` and `results/`.
+
 API probe findings and decisions made at gates. Newest first within each section. Experiment results per iteration: FINDINGS.md (summary) and results/<run_name>/ (reports, stats, manifests).
 
 ## Status (2026-11-07)

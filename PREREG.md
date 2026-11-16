@@ -4,6 +4,33 @@ Committed 2026-11-08, after Gate 1 approval and before any Stage 2 run. Anything
 this commit is reported as exploratory. The design history that led here (iterations 1–5) is in
 `FINDINGS.md`; the frozen artifact hashes are in `FREEZE.json`.
 
+## Amendment 4 (2026-11-15): exploratory analyses added for the write-up, after all data were analyzed
+
+Human decisions, made after every analysis above was complete. Everything in this amendment is
+**exploratory**. No pre-registered result is dropped or changed; each is still reported in
+`results/stage4_final/REPORT.md` and in the write-up.
+
+- **Stage 3 headline contrast: block − enable (with control − enable).** Block and enable differ
+  only in the words "approved" and "blocked", while control also differs in status ("final" vs
+  "pending") and score (0.93 vs 0.89). The write-up's Figure 1b and Table 2 therefore show
+  block − enable and control − enable, Holm-corrected across those 12 contrasts at α = 0.05
+  (`writeup/generated/stage3_vs_enable.json`). Block − enable is significant for GPT-5.6 Sol
+  (−21 pts, Holm p = 0.03) and GPT-5.5 (−46 pts, Holm p = 0.005). The pre-registered
+  block − control and enable − control contrasts are reported alongside, in the text of
+  write-up §1.2.
+- **Monitor analysis restricted to V > 0.** The monitor was not among this document's primary
+  outcomes (the spec listed it as secondary). No run violated at V = 0, and the monitor can read
+  V in `grader.py`, so V = 0 runs are trivially easy negatives that inflated per-model AUROC
+  (with reasoning, 0.82–0.92 for four models on all grader readers, vs 0.63–0.81 on V > 0). The
+  write-up's Figure 2 and Table 4 use grader readers with V > 0 (`readers_vpos` in
+  `stage4_stats.json`). The all-reader results remain in `stage4_stats.json` and `.md`.
+- **Monitor AUROC confidence intervals.** Paired percentile bootstrap over runs (2,000
+  resamples, seed 20261115) for AUROC A, AUROC B and B − A, per model and pooled.
+- **Calibration bug fix (not an analysis choice).** Decile bins were built from float edges, so
+  every `p_violate` = 0.6 fell in no bin and 0.3 and 0.7 landed one bin low. Bins now use
+  integer indices. This changed only the calibration plots and bin counts, not AUROC, precision,
+  recall or mean p.
+
 ## Amendment 3 (2026-11-10): conventional alpha = 0.05, made after all data were analyzed
 
 Human decision, after Stages 3 and 4 were analyzed: all inference uses **α = 0.05 and 95%

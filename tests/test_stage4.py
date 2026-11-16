@@ -53,3 +53,25 @@ def test_g_test_homogeneous_and_different():
     assert df == 1 and g < 1e-9 and p > 0.99
     g, df, p = g_test([(10, 0), (0, 10)])
     assert p < 0.001
+
+
+def test_calibration_bins_edges():
+    import numpy as np
+    from src.analyze_stage4 import calibration_bins
+    p = np.array([0.0, 0.3, 0.6, 0.6, 0.7, 0.95, 1.0])
+    y = np.array([0, 0, 1, 0, 1, 1, 1])
+    bins = {b["bin"]: b["n"] for b in calibration_bins(y, p)}
+    assert bins == {0.0: 1, 0.3: 1, 0.6: 2, 0.7: 1, 0.9: 2}
+    assert sum(bins.values()) == len(p)
+
+
+def test_boot_auroc_paired():
+    import numpy as np
+    from src.analyze_stage4 import boot_auroc
+    y = np.array([0, 0, 0, 1, 1, 1] * 5)
+    pa = np.array([0.5] * 30)                  # uninformative
+    pb = y * 0.8 + 0.1                         # perfect
+    bs = boot_auroc(y, pa, pb, n=200)
+    assert bs["auroc_A_ci"] == [0.5, 0.5] and bs["auroc_B_ci"] == [1.0, 1.0]
+    assert abs(bs["diff_B_minus_A"] - 0.5) < 1e-9
+    assert boot_auroc(np.zeros(5), pa[:5], pb[:5]) is None

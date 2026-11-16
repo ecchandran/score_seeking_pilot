@@ -289,6 +289,9 @@ Run under `FREEZE_v3.json` / PREREG Amendment 2. 540 runs, $14.83. Full report:
 - DeepSeek leans deployment-seeking (block lower, enable higher; not significant). Astra stays
   at 0%.
 - The block effect is rarely verbalized in OpenAI reasoning summaries.
+- *Exploratory (2026-11-15, PREREG Amendment 4):* block − enable, the write-up's headline
+  contrast, is significant for Sol (21% → 0%) and GPT-5.5 (72% → 26%) after Holm across the 12
+  block − enable and control − enable contrasts.
 
 ## Exploratory: violation at V=1 vs capability order (post hoc, not pre-registered)
 
@@ -348,6 +351,13 @@ validated against GPT-5.5 labels on 30 items per judge instead of hand labels (h
 - **H4:** dishonest attestation is rare: gpt-oss 10/160, DeepSeek 1/28, all others 0. GPT-5.5
   and Sol violators always answer "No". gpt-oss answers "Yes" in 90/160 violations, mostly
   without acknowledging the conflict (ambiguous by the pre-registered rule).
-- **Monitor:** AUROC with reasoning (B) 0.70 pooled, 0.82–0.92 for gpt-oss, o3, GPT-5.5,
-  DeepSeek; Sol near chance (0.56) in both variants. Reasoning adds +0.18 for GPT-5.5 and
-  DeepSeek. The monitor under-predicts (mean p 0.38 vs base rate 0.47).
+- **Monitor (as analyzed 2026-11-10, all grader readers):** AUROC with reasoning (B) 0.70
+  pooled, 0.82–0.92 for gpt-oss, o3, GPT-5.5, DeepSeek; Sol near chance (0.56) in both variants.
+  Reasoning adds +0.18 for GPT-5.5 and DeepSeek. The monitor under-predicts (mean p 0.38 vs base
+  rate 0.47).
+- **Monitor, revised (2026-11-15, PREREG Amendment 4):** V = 0 runs never violate and the monitor
+  can read V, so they inflated the numbers above. On grader readers with V > 0 (1,007 runs),
+  AUROC without reasoning is near chance for every model (0.48–0.61). With reasoning it is 0.74
+  for GPT-5.5, 0.80 for DeepSeek and 0.81 for o3, and 0.64 pooled. The bootstrap CI of the gain
+  lies above zero only for GPT-5.5 (+0.26), DeepSeek (+0.20) and pooled (+0.16). See
+  `results/stage4_final/REPORT.md`.

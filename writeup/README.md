@@ -1,6 +1,6 @@
-# Write-up (2 pages, LaTeX)
+# Write-up (6 pages, LaTeX)
 
-- `main.tex`: the document. Replace the grey `\todo{...}` placeholders with your text.
+- `main.tex`: the document.
 - `generated/`: plot data and table rows, built from the committed stats files. Do not edit;
   regenerate with `.venv/bin/python writeup/make_figures.py` (from the repository root).
 
